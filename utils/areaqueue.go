@@ -2,8 +2,9 @@ package utils
 
 import (
 	"container/heap"
-	"goldrush/api"
 	"sync"
+
+	"goldrush/api"
 )
 
 type AreaQueue struct {
@@ -16,7 +17,7 @@ func NewAreaQueue() *AreaQueue {
 	aq := &AreaQueue{
 		ch: make(chan *api.ExploreResponse),
 	}
-	pq := make(PriorityQueue, 0, 50)
+	pq := make(PriorityQueue, 0, 2000)
 	aq.pq = &pq
 	heap.Init(aq.pq)
 	return aq
@@ -28,7 +29,6 @@ func (q *AreaQueue) Push(zone *api.ExploreResponse) {
 		return
 	default:
 	}
-
 	p := float32(zone.Amount) / float32(zone.Area.SizeX*zone.Area.SizeY)
 	i := &Item{
 		priority: int(p * 100000),

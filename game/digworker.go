@@ -25,7 +25,6 @@ func (d *Digger) dig(x, y, amount int32) {
 			d.returnLicense(license)
 			license = d.getLicense()
 		}
-
 		req := &api.DigRequest{LicenseID: license.ID, PosX: x, PosY: y, Depth: depth}
 		res := &api.Treasures{}
 		t := time.Now()

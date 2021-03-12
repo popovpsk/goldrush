@@ -20,9 +20,14 @@ func NewMetricsSvc() *Svc {
 	}
 }
 
+const metricsEnabled = true
+
 func (s *Svc) Start() {
 	go func() {
-		return
+		if !metricsEnabled {
+			return
+		}
+
 		for range time.Tick(time.Minute * 2) {
 			cp := s.data
 			s.m.Lock()
@@ -38,11 +43,11 @@ func (s *Svc) Start() {
 					sum += t
 				}
 				d := stats.LoadRawData(v)
-				med, _ := d.Median()
 				avg := sum / int64(len(v))
 				p90, _ := d.Percentile(90)
 				p75, _ := d.Percentile(75)
-				str := fmt.Sprintf("%s: cnt:%d, avg:%v,median:%v, 90p:%v, 75p:%v", name, len(v), avg, med, p90, p75)
+				p95, _ := d.Percentile(99.5)
+				str := fmt.Sprintf("%s: cnt:%d, avg:%v, 90p:%v, 75p:%v, 99.5p:%v", name, len(v), avg, p90, p75, p95)
 				fmt.Println(str)
 				runtime.Gosched()
 			}
@@ -51,7 +56,9 @@ func (s *Svc) Start() {
 }
 
 func (s *Svc) Add(name string, t time.Duration) {
-	return
+	if !metricsEnabled {
+		return
+	}
 	s.m.Lock()
 	defer s.m.Unlock()
 	_, ok := s.data[name]
@@ -59,5 +66,19 @@ func (s *Svc) Add(name string, t time.Duration) {
 		s.data[name] = append(s.data[name], t.Milliseconds())
 	} else {
 		s.data[name] = []int64{t.Milliseconds()}
+	}
+}
+
+func (s *Svc) AddInt(name string, v int) {
+	if !metricsEnabled {
+		return
+	}
+	s.m.Lock()
+	defer s.m.Unlock()
+	_, ok := s.data[name]
+	if ok {
+		s.data[name] = append(s.data[name], int64(v))
+	} else {
+		s.data[name] = []int64{int64(v)}
 	}
 }

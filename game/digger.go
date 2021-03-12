@@ -1,11 +1,10 @@
 package game
 
 import (
-	"fmt"
 	"goldrush/api"
+	"goldrush/bank"
 	"goldrush/metrics"
 	"goldrush/utils"
-	"sync/atomic"
 	"time"
 )
 
@@ -14,7 +13,7 @@ type Digger struct {
 	licenses       chan *api.License
 	activeLicenses *int32
 	cashCh         chan string
-	bank           *Bank
+	bank           *bank.Bank
 	licWakeCh      chan struct{}
 	digWorkerCnt   *int32
 	pointQueue     *utils.PointQueue
@@ -28,9 +27,9 @@ func NewDigger(client *api.Client, metrics *metrics.Svc) *Digger {
 	return &Digger{
 		apiClient:      client,
 		licenses:       make(chan *api.License, 10),
-		cashCh:         make(chan string, 1000),
+		cashCh:         make(chan string, 5000),
 		licWakeCh:      make(chan struct{}),
-		bank:           NewBank(),
+		bank:           bank.NewBank(),
 		activeLicenses: &l,
 		pointQueue:     utils.NewPointQueue(),
 		metrics:        metrics,
@@ -39,26 +38,28 @@ func NewDigger(client *api.Client, metrics *metrics.Svc) *Digger {
 	}
 }
 
-var all int32 = 0
+var throttle = false
 
 func (d *Digger) Start() {
-	d.startGetLicensesWorker()
-	d.startGetLicensesWorker()
-	d.startGetLicensesWorker()
+	go d.search()
+	d.startWorkers(2, d.startScan)
+	d.startWorkers(4, d.startScanB)
 
-	d.startDigWorker()
-	d.startDigWorker()
+	<-time.After(time.Second)
+	d.startWorkers(2, d.startGetLicensesWorker)
+	d.startWorkers(3, d.startDigWorker)
 
-	d.startExchangeCashWorker()
-	d.startExchangeCashWorker()
+	d.startWorkers(5, d.startExchangeCashWorker)
 
-	d.startExploreWorkers()
-
-	d.search()
+	go func() {
+		<-time.After(time.Minute * 8)
+		throttle = true
+		d.startWorkers(3, d.startExchangeCashWorker)
+	}()
 }
 
 const sizeX = 100
-const sizeY = 100
+const sizeY = 500
 
 func (d *Digger) search() {
 	for x := 0; x < 3500; x += sizeX {
@@ -67,21 +68,7 @@ func (d *Digger) search() {
 		}
 	}
 	close(d.areaCh)
-	d.startGetLicensesWorker()
-	d.startGetLicensesWorker()
-	d.startGetLicensesWorker()
-	d.startGetLicensesWorker()
-	d.startGetLicensesWorker()
-	d.startGetLicensesWorker()
-}
-
-func (d *Digger) startExploreWorkers() {
-	for i := 0; i < 2; i++ {
-		d.startScan()
-	}
-	for i := 0; i < 4; i++ {
-		d.startScanB()
-	}
+	d.startWorkers(6, d.startGetLicensesWorker)
 }
 
 func (d *Digger) startScan() {
@@ -106,68 +93,18 @@ func (d *Digger) startScanB() {
 	}()
 }
 
-func (d *Digger) scan(area *api.Area) {
-	res := &api.ExploreResponse{}
-
-	t := time.Now()
-	d.apiClient.Explore(area, res)
-	d.metrics.Add(fmt.Sprintf("explore %v", area.SizeX*area.SizeY), time.Since(t))
-	atomic.AddInt32(&all, int32(res.Amount))
-	d.areaQueue.Push(res)
-}
-
-func (d *Digger) bSearch(zone *api.ExploreResponse) {
-	if zone.Area.SizeX*zone.Area.SizeY <= 40 {
-		d.clearSector(&zone.Area, zone.Amount)
-		return
-	}
-
-	req := &api.Area{
-		PosX:  zone.Area.PosX,
-		PosY:  zone.Area.PosY,
-		SizeX: zone.Area.SizeX / 2,
-		SizeY: zone.Area.SizeY / 2,
-	}
-	res := &api.ExploreResponse{}
-
-	t := time.Now()
-	d.apiClient.Explore(req, res)
-	d.metrics.Add(fmt.Sprintf("explore %v", req.SizeX*req.SizeY), time.Since(t))
-	d.areaQueue.Push(res)
-	res2 := &api.ExploreResponse{
-		Area: api.Area{
-			PosX:  zone.Area.PosX + zone.Area.SizeX/2,
-			PosY:  zone.Area.PosY + zone.Area.SizeY/2,
-			SizeX: zone.Area.SizeX / 2,
-			SizeY: zone.Area.SizeX / 2,
-		},
-		Amount: zone.Amount - res.Amount,
-	}
-	d.areaQueue.Push(res2)
-}
-
-func (d *Digger) clearSector(area *api.Area, amount int) {
-	for x := area.PosX; x < area.PosX+area.SizeX; x++ {
-		for y := area.PosY; y < area.PosY+area.SizeY; y++ {
-			req := &api.Area{
-				PosX:  x,
-				PosY:  y,
-				SizeX: 1,
-				SizeY: 1,
-			}
-			res := &api.ExploreResponse{}
+func (d *Digger) startExchangeCashWorker() {
+	go func() {
+		for {
+			c := <-d.cashCh
+			p := make([]uint32, 0, 64)
+			var res api.Payment = p
 			t := time.Now()
-			d.apiClient.Explore(req, res)
-			d.metrics.Add("explore 1", time.Since(t))
-			if res.Amount > 0 {
-				d.pointQueue.Push(utils.DigPoint{X: int32(x), Y: int32(y), Amount: int32(res.Amount)})
-				amount -= res.Amount
-				if amount <= 0 {
-					return
-				}
-			}
+			d.apiClient.Cash(c, &res)
+			d.metrics.Add("cash", time.Since(t))
+			d.bank.Store(res)
 		}
-	}
+	}()
 }
 
 func (d *Digger) exchangeCash(cash []string) {
@@ -182,7 +119,7 @@ func (d *Digger) exchangeCash(cash []string) {
 		}
 	}
 	if needAsync {
-		fmt.Println("cash async")
+		d.metrics.Add("CASH ASYNC", 1)
 		go func() {
 			for _, c := range cash {
 				d.cashCh <- c
@@ -191,16 +128,8 @@ func (d *Digger) exchangeCash(cash []string) {
 	}
 }
 
-func (d *Digger) startExchangeCashWorker() {
-	go func() {
-		for {
-			c := <-d.cashCh
-			p := make([]uint32, 0, 64)
-			var res api.Payment = p
-			t := time.Now()
-			d.apiClient.Cash(c, &res)
-			d.metrics.Add("cash", time.Since(t))
-			d.bank.Store(res)
-		}
-	}()
+func (d *Digger) startWorkers(cnt int, f func()) {
+	for i := 0; i < cnt; i++ {
+		f()
+	}
 }

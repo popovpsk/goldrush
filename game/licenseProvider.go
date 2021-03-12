@@ -30,10 +30,24 @@ func (d *Digger) startGetLicensesWorker() {
 			}
 			license := &api.License{}
 			t := time.Now()
-			d.apiClient.PostLicenses(nil, license)
+			if d.bank.Count() > 2000 && atomic.LoadInt32(d.activeLicenses) <= 4 /*&& atomic.LoadInt32(&price) < 10000 */ {
+				d.getPaidLicenses(license)
+			} else {
+				d.apiClient.PostLicenses(nil, license)
+			}
 			d.metrics.Add("license", time.Since(t))
 			atomic.AddInt32(d.activeLicenses, 1)
 			d.licenses <- license
 		}
 	}()
+}
+
+func (d *Digger) getPaidLicenses(license *api.License) {
+	var p int32 = 22
+	if coins, ok := d.bank.Get(p); ok {
+		d.apiClient.PostLicenses(coins, license)
+		d.metrics.AddInt("allowed", license.DigAllowed)
+	} else {
+		d.apiClient.PostLicenses(nil, license)
+	}
 }

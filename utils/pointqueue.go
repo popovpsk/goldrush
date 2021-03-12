@@ -1,6 +1,11 @@
 package utils
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+	"sync/atomic"
+	"time"
+)
 
 type PointQueue struct {
 	data [][]point
@@ -18,9 +23,22 @@ type DigPoint struct {
 
 func NewPointQueue() *PointQueue {
 	data := make([][]point, 10, 10)
-	for i := 0; i < 10; i++ {
-		data[i] = make([]point, 0, 5)
+	data[0] = make([]point, 0, 5000)
+	data[1] = make([]point, 0, 500)
+	data[2] = make([]point, 0, 10)
+	for i := 3; i < 10; i++ {
+		data[i] = make([]point, 0)
 	}
+
+	go func() {
+		<-time.After(time.Minute*9 + time.Second*30)
+		for i, v := range cntrs {
+			if v > 0 {
+				fmt.Printf("p %v:%v", i+1, v)
+			}
+		}
+	}()
+
 	return &PointQueue{
 		data: data,
 		dgCh: make(chan DigPoint),
@@ -44,7 +62,10 @@ func (dq *PointQueue) Peek() DigPoint {
 	return dp
 }
 
+var cntrs = []int32{0, 0, 0, 0, 0, 0, 0, 0, 0}
+
 func (dq *PointQueue) Push(p DigPoint) {
+	atomic.AddInt32(&cntrs[p.Amount-1], 1)
 	select {
 	case dq.dgCh <- p:
 	default:

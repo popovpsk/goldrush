@@ -4,17 +4,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/mailru/easyjson"
 	"github.com/valyala/fasthttp"
 )
 
 const contentTypeJson = "application/json"
+const headerAccept = "*/*"
+const headerAcceptEncoding = "gzip, deflate"
 
 type Client struct {
 	cl             *fasthttp.Client
-	logger         *logrus.Logger
 	exploreURI     []byte
 	getBalanceURI  []byte
 	licensesURI    []byte
@@ -23,13 +22,12 @@ type Client struct {
 	emptyArrayBody []byte
 }
 
-func NewClient(url string, logger *logrus.Logger) *Client {
+func NewClient(url string) *Client {
 	return &Client{
 		cl: &fasthttp.Client{
 			ReadTimeout:  time.Second,
 			WriteTimeout: time.Second,
 		},
-		logger:         logger,
 		exploreURI:     []byte(url + "/explore"),
 		getBalanceURI:  []byte(url + "/balance"),
 		licensesURI:    []byte(url + "/licenses"),
@@ -56,13 +54,13 @@ func (c *Client) Explore(area *Area, response *ExploreResponse) {
 	fasthttp.ReleaseResponse(res)
 }
 
-func (c *Client) PostLicenses(wallet *PostLicenseRequest, response *License) {
+func (c *Client) PostLicenses(wallet PostLicenseRequest, response *License) {
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	req.SetRequestURIBytes(c.licensesURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentType(contentTypeJson)
-	req.Header.Add(fasthttp.HeaderAccept, "*/*")
-	req.Header.Add(fasthttp.HeaderAcceptEncoding, "gzip, deflate")
+	req.Header.Add(fasthttp.HeaderAccept, headerAccept)
+	req.Header.Add(fasthttp.HeaderAcceptEncoding, headerAcceptEncoding)
 
 	if wallet != nil {
 		easyjson.MarshalToWriter(wallet, req.BodyWriter())
@@ -77,7 +75,7 @@ func (c *Client) PostLicenses(wallet *PostLicenseRequest, response *License) {
 		}
 	}
 	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
-		c.logger.Error(err)
+		fmt.Println(err)
 	}
 
 	fasthttp.ReleaseRequest(req)
@@ -90,8 +88,8 @@ func (c *Client) Dig(request *DigRequest, response *Treasures) bool {
 	req.SetRequestURIBytes(c.digURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentType(contentTypeJson)
-	req.Header.Add(fasthttp.HeaderAccept, "*/*")
-	req.Header.Add(fasthttp.HeaderAcceptEncoding, "gzip, deflate")
+	req.Header.Add(fasthttp.HeaderAccept, headerAccept)
+	req.Header.Add(fasthttp.HeaderAcceptEncoding, headerAcceptEncoding)
 
 	easyjson.MarshalToWriter(request, req.BodyWriter())
 
@@ -101,14 +99,14 @@ func (c *Client) Dig(request *DigRequest, response *Treasures) bool {
 			return false
 		}
 		if res.StatusCode() != 200 {
-			c.logger.Infoln(string(res.Body()))
+			fmt.Println(string(res.Body()))
 		}
 		if err2 == nil && res.StatusCode() == 200 {
 			break
 		}
 	}
 	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
-		c.logger.Error(err)
+		fmt.Println(err)
 	}
 	fasthttp.ReleaseRequest(req)
 	fasthttp.ReleaseResponse(res)
@@ -120,8 +118,8 @@ func (c *Client) Cash(request string, response *Payment) {
 	req.SetRequestURIBytes(c.cashURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
 	req.Header.SetContentType(contentTypeJson)
-	req.Header.Add(fasthttp.HeaderAccept, "*/*")
-	req.Header.Add(fasthttp.HeaderAcceptEncoding, "gzip, deflate")
+	req.Header.Add(fasthttp.HeaderAccept, headerAccept)
+	req.Header.Add(fasthttp.HeaderAcceptEncoding, headerAcceptEncoding)
 	req.SetBodyRaw([]byte(fmt.Sprintf("\"%s\"", request)))
 	for {
 		err := c.cl.Do(req, res)
@@ -144,7 +142,7 @@ func (c *Client) GetBalance(response *BalanceResponse) {
 	c.cl.Do(req, res)
 
 	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
-		c.logger.Error(err)
+		fmt.Println(err)
 	}
 	fasthttp.ReleaseRequest(req)
 	fasthttp.ReleaseResponse(res)
@@ -162,7 +160,7 @@ func (c *Client) GetLicenses(response *LicensesResponse) {
 		}
 	}
 	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
-		c.logger.Error(err)
+		fmt.Println(err)
 	}
 	fasthttp.ReleaseRequest(req)
 	fasthttp.ReleaseResponse(res)
