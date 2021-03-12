@@ -52,9 +52,12 @@ func (d *Digger) Start() {
 	d.startWorkers(5, d.startExchangeCashWorker)
 
 	go func() {
-		<-time.After(time.Minute * 8)
+		<-time.After(time.Minute*6 + time.Second*40)
 		throttle = true
+		d.startWorkers(1, d.startDigWorker)
 		d.startWorkers(3, d.startExchangeCashWorker)
+		<-time.After(time.Minute * 2)
+		d.startWorkers(1, d.startExchangeCashWorker)
 	}()
 }
 

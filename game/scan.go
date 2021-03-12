@@ -23,11 +23,11 @@ func (d *Digger) scan(area *api.Area) {
 
 func (d *Digger) bSearch(zone *api.ExploreResponse) {
 	size := zone.Area.SizeX * zone.Area.SizeY
-	if throttle && size >= 1250 {
+	if throttle {
 		return
 	}
 
-	if size <= 100 {
+	if size <= 75 {
 		d.clearSector(&zone.Area, zone.Amount)
 		return
 	}

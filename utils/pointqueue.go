@@ -31,12 +31,8 @@ func NewPointQueue() *PointQueue {
 	}
 
 	go func() {
-		<-time.After(time.Minute*9 + time.Second*30)
-		for i, v := range cntrs {
-			if v > 0 {
-				fmt.Printf("p %v:%v", i+1, v)
-			}
-		}
+		<-time.After(time.Minute*9 + time.Second*50)
+		fmt.Printf("CNTRS== %v : %v\n", atomic.LoadInt32(&cntrs1), atomic.LoadInt32(&cntrs2))
 	}()
 
 	return &PointQueue{
@@ -46,6 +42,8 @@ func NewPointQueue() *PointQueue {
 }
 
 func (dq *PointQueue) Peek() DigPoint {
+	atomic.AddInt32(&cntrs2, 1)
+
 	dq.m.Lock()
 	for i := 9; i >= 0; i-- {
 		if len(dq.data[i]) > 0 {
@@ -62,10 +60,11 @@ func (dq *PointQueue) Peek() DigPoint {
 	return dp
 }
 
-var cntrs = []int32{0, 0, 0, 0, 0, 0, 0, 0, 0}
+var cntrs1 int32
+var cntrs2 int32
 
 func (dq *PointQueue) Push(p DigPoint) {
-	atomic.AddInt32(&cntrs[p.Amount-1], 1)
+	atomic.AddInt32(&cntrs1, 1)
 	select {
 	case dq.dgCh <- p:
 	default:
