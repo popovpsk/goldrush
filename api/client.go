@@ -2,10 +2,9 @@ package api
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/mailru/easyjson"
 	"github.com/valyala/fasthttp"
+	"sync/atomic"
 )
 
 const contentTypeJson = "application/json"
@@ -13,7 +12,7 @@ const headerAccept = "*/*"
 const headerAcceptEncoding = "gzip, deflate"
 
 type Client struct {
-	cl             *fasthttp.Client
+	cl             *Gateway
 	exploreURI     []byte
 	getBalanceURI  []byte
 	licensesURI    []byte
@@ -22,12 +21,18 @@ type Client struct {
 	emptyArrayBody []byte
 }
 
-func NewClient(url string) *Client {
+var ErcntExp int32
+var ErcntLic int32
+var ErrcntDig int32
+var ErrcntCash int32
+
+func EndLog() {
+	fmt.Printf("errors: exp:%v, lic:%v, dig:%v, cash:%v\n", ErcntExp, ErcntLic, ErrcntDig, ErrcntCash)
+}
+
+func NewClient(url string, gw *Gateway) *Client {
 	return &Client{
-		cl: &fasthttp.Client{
-			ReadTimeout:  time.Second,
-			WriteTimeout: time.Second,
-		},
+		cl:             gw,
 		exploreURI:     []byte(url + "/explore"),
 		getBalanceURI:  []byte(url + "/balance"),
 		licensesURI:    []byte(url + "/licenses"),
@@ -44,10 +49,15 @@ func (c *Client) Explore(area *Area, response *ExploreResponse) {
 	req.Header.SetContentType(contentTypeJson)
 	easyjson.MarshalToWriter(area, req.BodyWriter())
 	for {
-		err := c.cl.Do(req, res)
-		if err == nil && res.StatusCode() == 200 {
+		if area.Size() >= 50 {
+			c.cl.Do(req, res, 3)
+		} else {
+			c.cl.Do(req, res, 0)
+		}
+		if res.StatusCode() == 200 {
 			break
 		}
+		atomic.AddInt32(&ErcntExp, 1)
 	}
 	easyjson.Unmarshal(res.Body(), response)
 	fasthttp.ReleaseRequest(req)
@@ -69,10 +79,11 @@ func (c *Client) PostLicenses(wallet PostLicenseRequest, response *License) {
 	}
 
 	for {
-		err := c.cl.Do(req, res)
-		if err == nil && res.StatusCode() == 200 {
+		c.cl.Do(req, res, 3)
+		if res.StatusCode() == 200 {
 			break
 		}
+		atomic.AddInt32(&ErcntLic, 1)
 	}
 	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
 		fmt.Println(err)
@@ -94,16 +105,17 @@ func (c *Client) Dig(request *DigRequest, response *Treasures) bool {
 	easyjson.MarshalToWriter(request, req.BodyWriter())
 
 	for {
-		err2 := c.cl.Do(req, res)
+		c.cl.Do(req, res, 0)
 		if res.StatusCode() == 404 {
 			return false
 		}
 		if res.StatusCode() != 200 {
 			fmt.Println(string(res.Body()))
 		}
-		if err2 == nil && res.StatusCode() == 200 {
+		if res.StatusCode() == 200 {
 			break
 		}
+		atomic.AddInt32(&ErrcntDig, 1)
 	}
 	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
 		fmt.Println(err)
@@ -122,10 +134,12 @@ func (c *Client) Cash(request string, response *Payment) {
 	req.Header.Add(fasthttp.HeaderAcceptEncoding, headerAcceptEncoding)
 	req.SetBodyRaw([]byte(fmt.Sprintf("\"%s\"", request)))
 	for {
-		err := c.cl.Do(req, res)
-		if err == nil && res.StatusCode() == 200 {
+		c.cl.Do(req, res, 3)
+		if res.StatusCode() == 200 {
 			break
 		}
+		atomic.AddInt32(&ErrcntCash, 1)
+
 	}
 	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
 		fmt.Println(err.Error())
@@ -139,7 +153,7 @@ func (c *Client) GetBalance(response *BalanceResponse) {
 	req.SetRequestURIBytes(c.getBalanceURI)
 	req.Header.SetContentType(contentTypeJson)
 
-	c.cl.Do(req, res)
+	c.cl.Do(req, res, 0)
 
 	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
 		fmt.Println(err)
@@ -151,11 +165,9 @@ func (c *Client) GetBalance(response *BalanceResponse) {
 func (c *Client) GetLicenses(response *LicensesResponse) {
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	req.SetRequestURIBytes(c.licensesURI)
-	fmt.Println("call get lic")
 	for {
-		err := c.cl.Do(req, res)
-		if err == nil && res.StatusCode() == 200 {
-			fmt.Println("call licenses res", string(res.Body()))
+		c.cl.Do(req, res, 0)
+		if res.StatusCode() == 200 {
 			break
 		}
 	}

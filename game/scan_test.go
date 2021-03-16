@@ -17,15 +17,18 @@ func TestScan(t *testing.T) {
 	q.MarshalJSON()
 	ss, _ := w.MarshalJSON()
 	fmt.Println(string(ss))
-	return
+
 	d := NewDigger(nil, metrics.NewMetricsSvc())
-	d.bSearch(&api.ExploreResponse{
+
+	r := &api.ExploreResponse{
 		Area: api.Area{
-			PosX:  100,
-			PosY:  100,
-			SizeX: 24,
-			SizeY: 25,
+			PosX:  15,
+			PosY:  15,
+			SizeX: 13,
+			SizeY: 11,
 		},
-		Amount: 500,
-	})
+		Amount: 8,
+	}
+	d.clearSector(&r.Area, 8)
+
 }

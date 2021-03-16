@@ -44,10 +44,11 @@ func (s *Svc) Start() {
 				}
 				d := stats.LoadRawData(v)
 				avg := sum / int64(len(v))
+				med, _ := d.Median()
 				p90, _ := d.Percentile(90)
 				p75, _ := d.Percentile(75)
 				p95, _ := d.Percentile(99.5)
-				str := fmt.Sprintf("%s: cnt:%d, avg:%v, 90p:%v, 75p:%v, 99.5p:%v", name, len(v), avg, p90, p75, p95)
+				str := fmt.Sprintf("%s: cnt:%d, avg:%v, med:%v, 75p:%v, 90p:%v, 99.5p:%v", name, len(v), avg, med, p75, p90, p95)
 				fmt.Println(str)
 				runtime.Gosched()
 			}

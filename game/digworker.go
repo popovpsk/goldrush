@@ -1,17 +1,24 @@
 package game
 
 import (
+	"fmt"
 	"goldrush/api"
+	"sync/atomic"
 	"time"
 )
 
-func (d *Digger) startDigWorker() {
-	go func() {
-		for {
-			p := d.pointQueue.Peek()
-			d.dig(p.X, p.Y, p.Amount)
-		}
-	}()
+func (d *Digger) digWork(state *int) {
+	p := d.pointQueue.Peek()
+	d.dig(p.X, p.Y, p.Amount)
+}
+
+var qqq = make([]int32, 10)
+var qqq2 = make([]int32, 10)
+
+func EndLog() {
+	for i, v := range qqq {
+		fmt.Printf("%v:%v; ", i+1, qqq2[i]/v)
+	}
 }
 
 func (d *Digger) dig(x, y, amount int32) {
@@ -29,13 +36,29 @@ func (d *Digger) dig(x, y, amount int32) {
 		res := &api.Treasures{}
 		t := time.Now()
 		ok := d.apiClient.Dig(req, res)
-		d.metrics.Add("dig", time.Since(t))
+		el := time.Since(t)
+		d.metrics.Add("dig", el)
 		license.DigUsed++
 		depth++
 
+		atomic.AddInt32(&qqq[depth-2], 1)
+		atomic.AddInt32(&qqq2[depth-2], int32(el.Milliseconds()))
+
 		if ok {
-			d.exchangeCash(*res)
+			d.metrics.AddInt("array gold len", len(*res))
+
+			money := 0
+			for _, r := range *res {
+				s := &api.Payment{}
+				d.apiClient.Cash(r, s)
+				money += len(*s)
+				d.bank.Store(*s)
+			}
+
+			d.metrics.AddInt(fmt.Sprintf("DP:%v", depth), money)
+			d.goldPot.Store(*res)
 			amount--
+
 		}
 	}
 	d.returnLicense(license)

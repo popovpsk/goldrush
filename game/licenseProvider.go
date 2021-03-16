@@ -2,6 +2,7 @@ package game
 
 import (
 	"goldrush/api"
+	"goldrush/datastruct/foreman"
 	"sync/atomic"
 	"time"
 )
@@ -12,7 +13,7 @@ func (d *Digger) getLicense() *api.License {
 
 func (d *Digger) returnLicense(license *api.License) {
 	if license.DigUsed >= license.DigAllowed {
-		atomic.AddInt32(d.activeLicenses, -1)
+		atomic.AddInt32(&d.activeLicenses, -1)
 		select {
 		case d.licWakeCh <- struct{}{}:
 		default:
@@ -22,27 +23,15 @@ func (d *Digger) returnLicense(license *api.License) {
 	}
 }
 
-func (d *Digger) startGetLicensesWorker() {
-	go func() {
-		for {
-			if atomic.LoadInt32(d.activeLicenses) >= 10 {
-				<-d.licWakeCh
-			}
-			license := &api.License{}
-			t := time.Now()
-			if d.bank.Count() > 2000 && atomic.LoadInt32(d.activeLicenses) <= 4 /*&& atomic.LoadInt32(&price) < 10000 */ {
-				d.getPaidLicenses(license)
-			} else {
-				d.apiClient.PostLicenses(nil, license)
-			}
-			d.metrics.Add("license", time.Since(t))
-			atomic.AddInt32(d.activeLicenses, 1)
-			d.licenses <- license
-		}
-	}()
-}
-
-func (d *Digger) getPaidLicenses(license *api.License) {
+func (d *Digger) licensesWork(state *int) {
+	if atomic.LoadInt32(&d.activeLicenses) >= 10 {
+		<-d.licWakeCh
+	}
+	if *state == foreman.Stopped {
+		return
+	}
+	license := &api.License{}
+	t := time.Now()
 	var p int32 = 22
 	if coins, ok := d.bank.Get(p); ok {
 		d.apiClient.PostLicenses(coins, license)
@@ -50,4 +39,7 @@ func (d *Digger) getPaidLicenses(license *api.License) {
 	} else {
 		d.apiClient.PostLicenses(nil, license)
 	}
+	d.metrics.Add("license", time.Since(t))
+	atomic.AddInt32(&d.activeLicenses, 1)
+	d.licenses <- license
 }

@@ -1,8 +1,11 @@
 package bank
 
 import (
+	"fmt"
+	"goldrush/utils"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type Bank struct {
@@ -13,9 +16,14 @@ type Bank struct {
 }
 
 func NewBank() *Bank {
-	return &Bank{
-		coins: make([]uint32, 0, 600000),
+	b := &Bank{
+		coins: make([]uint32, 0, 75000),
 	}
+	go func() {
+		<-time.After(utils.GetEndDelay())
+		fmt.Printf("BANK len:%v\n", len(b.coins))
+	}()
+	return b
 }
 
 func (b *Bank) Count() int32 {
@@ -23,6 +31,9 @@ func (b *Bank) Count() int32 {
 }
 
 func (b *Bank) Store(coins []uint32) {
+	if atomic.LoadInt32(&b.count) > 2000 {
+		return
+	}
 	b.l.Lock()
 	b.coins = append(b.coins, coins...)
 	b.l.Unlock()

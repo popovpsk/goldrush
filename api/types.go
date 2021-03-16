@@ -41,4 +41,12 @@ type (
 		Balance uint32
 		Wallet  []uint32
 	}
+
+	Point struct {
+		X, Y, Amount int32
+	}
 )
+
+func (v *Area) Size() int {
+	return v.SizeX * v.SizeY
+}
