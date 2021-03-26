@@ -1,7 +1,6 @@
 package foreman
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -46,11 +45,9 @@ func (f *Foreman) Start(ID, count int) {
 		f.l.Unlock()
 
 		go func() {
-			fmt.Printf("FM: started:%v\n", ID)
 			fn := f.workers[ID]
 			for {
 				if state == Stopped {
-					fmt.Printf("FM: stopped:%v\n", ID)
 					return
 				}
 				fn(&state)

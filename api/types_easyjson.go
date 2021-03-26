@@ -149,7 +149,174 @@ func (v *PostLicenseRequest) UnmarshalJSON(data []byte) error {
 func (v *PostLicenseRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson6601e8cdDecodeGoldrushApi1(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushApi2(in *jlexer.Lexer, out *Payment) {
+func easyjson6601e8cdDecodeGoldrushApi2(in *jlexer.Lexer, out *PointInfo) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "X":
+			out.X = int32(in.Int32())
+		case "Y":
+			out.Y = int32(in.Int32())
+		case "Depth":
+			out.Depth = int32(in.Int32())
+		case "Money":
+			out.Money = int32(in.Int32())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson6601e8cdEncodeGoldrushApi2(out *jwriter.Writer, in PointInfo) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"X\":"
+		out.RawString(prefix[1:])
+		out.Int32(int32(in.X))
+	}
+	{
+		const prefix string = ",\"Y\":"
+		out.RawString(prefix)
+		out.Int32(int32(in.Y))
+	}
+	{
+		const prefix string = ",\"Depth\":"
+		out.RawString(prefix)
+		out.Int32(int32(in.Depth))
+	}
+	{
+		const prefix string = ",\"Money\":"
+		out.RawString(prefix)
+		out.Int32(int32(in.Money))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v PointInfo) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson6601e8cdEncodeGoldrushApi2(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v PointInfo) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson6601e8cdEncodeGoldrushApi2(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *PointInfo) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson6601e8cdDecodeGoldrushApi2(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *PointInfo) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson6601e8cdDecodeGoldrushApi2(l, v)
+}
+func easyjson6601e8cdDecodeGoldrushApi3(in *jlexer.Lexer, out *Point) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "X":
+			out.X = int32(in.Int32())
+		case "Y":
+			out.Y = int32(in.Int32())
+		case "Amount":
+			out.Amount = int32(in.Int32())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson6601e8cdEncodeGoldrushApi3(out *jwriter.Writer, in Point) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"X\":"
+		out.RawString(prefix[1:])
+		out.Int32(int32(in.X))
+	}
+	{
+		const prefix string = ",\"Y\":"
+		out.RawString(prefix)
+		out.Int32(int32(in.Y))
+	}
+	{
+		const prefix string = ",\"Amount\":"
+		out.RawString(prefix)
+		out.Int32(int32(in.Amount))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v Point) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson6601e8cdEncodeGoldrushApi3(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v Point) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson6601e8cdEncodeGoldrushApi3(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *Point) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson6601e8cdDecodeGoldrushApi3(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *Point) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson6601e8cdDecodeGoldrushApi3(l, v)
+}
+func easyjson6601e8cdDecodeGoldrushApi4(in *jlexer.Lexer, out *Payment) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		in.Skip()
@@ -177,7 +344,7 @@ func easyjson6601e8cdDecodeGoldrushApi2(in *jlexer.Lexer, out *Payment) {
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushApi2(out *jwriter.Writer, in Payment) {
+func easyjson6601e8cdEncodeGoldrushApi4(out *jwriter.Writer, in Payment) {
 	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 		out.RawString("null")
 	} else {
@@ -195,27 +362,93 @@ func easyjson6601e8cdEncodeGoldrushApi2(out *jwriter.Writer, in Payment) {
 // MarshalJSON supports json.Marshaler interface
 func (v Payment) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushApi2(&w, v)
+	easyjson6601e8cdEncodeGoldrushApi4(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Payment) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushApi2(w, v)
+	easyjson6601e8cdEncodeGoldrushApi4(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Payment) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushApi2(&r, v)
+	easyjson6601e8cdDecodeGoldrushApi4(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Payment) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushApi2(l, v)
+	easyjson6601e8cdDecodeGoldrushApi4(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushApi3(in *jlexer.Lexer, out *LicensesResponse) {
+func easyjson6601e8cdDecodeGoldrushApi5(in *jlexer.Lexer, out *Output) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		in.Skip()
+		*out = nil
+	} else {
+		in.Delim('[')
+		if *out == nil {
+			if !in.IsDelim(']') {
+				*out = make(Output, 0, 4)
+			} else {
+				*out = Output{}
+			}
+		} else {
+			*out = (*out)[:0]
+		}
+		for !in.IsDelim(']') {
+			var v10 PointInfo
+			(v10).UnmarshalEasyJSON(in)
+			*out = append(*out, v10)
+			in.WantComma()
+		}
+		in.Delim(']')
+	}
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson6601e8cdEncodeGoldrushApi5(out *jwriter.Writer, in Output) {
+	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
+		out.RawString("null")
+	} else {
+		out.RawByte('[')
+		for v11, v12 := range in {
+			if v11 > 0 {
+				out.RawByte(',')
+			}
+			(v12).MarshalEasyJSON(out)
+		}
+		out.RawByte(']')
+	}
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v Output) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson6601e8cdEncodeGoldrushApi5(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v Output) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson6601e8cdEncodeGoldrushApi5(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *Output) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson6601e8cdDecodeGoldrushApi5(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *Output) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson6601e8cdDecodeGoldrushApi5(l, v)
+}
+func easyjson6601e8cdDecodeGoldrushApi6(in *jlexer.Lexer, out *LicensesResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		in.Skip()
@@ -232,9 +465,9 @@ func easyjson6601e8cdDecodeGoldrushApi3(in *jlexer.Lexer, out *LicensesResponse)
 			*out = (*out)[:0]
 		}
 		for !in.IsDelim(']') {
-			var v10 License
-			(v10).UnmarshalEasyJSON(in)
-			*out = append(*out, v10)
+			var v13 License
+			(v13).UnmarshalEasyJSON(in)
+			*out = append(*out, v13)
 			in.WantComma()
 		}
 		in.Delim(']')
@@ -243,16 +476,16 @@ func easyjson6601e8cdDecodeGoldrushApi3(in *jlexer.Lexer, out *LicensesResponse)
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushApi3(out *jwriter.Writer, in LicensesResponse) {
+func easyjson6601e8cdEncodeGoldrushApi6(out *jwriter.Writer, in LicensesResponse) {
 	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
 		out.RawString("null")
 	} else {
 		out.RawByte('[')
-		for v11, v12 := range in {
-			if v11 > 0 {
+		for v14, v15 := range in {
+			if v14 > 0 {
 				out.RawByte(',')
 			}
-			(v12).MarshalEasyJSON(out)
+			(v15).MarshalEasyJSON(out)
 		}
 		out.RawByte(']')
 	}
@@ -261,27 +494,27 @@ func easyjson6601e8cdEncodeGoldrushApi3(out *jwriter.Writer, in LicensesResponse
 // MarshalJSON supports json.Marshaler interface
 func (v LicensesResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushApi3(&w, v)
+	easyjson6601e8cdEncodeGoldrushApi6(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v LicensesResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushApi3(w, v)
+	easyjson6601e8cdEncodeGoldrushApi6(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *LicensesResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushApi3(&r, v)
+	easyjson6601e8cdDecodeGoldrushApi6(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *LicensesResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushApi3(l, v)
+	easyjson6601e8cdDecodeGoldrushApi6(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushApi4(in *jlexer.Lexer, out *License) {
+func easyjson6601e8cdDecodeGoldrushApi7(in *jlexer.Lexer, out *License) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -316,7 +549,7 @@ func easyjson6601e8cdDecodeGoldrushApi4(in *jlexer.Lexer, out *License) {
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushApi4(out *jwriter.Writer, in License) {
+func easyjson6601e8cdEncodeGoldrushApi7(out *jwriter.Writer, in License) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -341,27 +574,27 @@ func easyjson6601e8cdEncodeGoldrushApi4(out *jwriter.Writer, in License) {
 // MarshalJSON supports json.Marshaler interface
 func (v License) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushApi4(&w, v)
+	easyjson6601e8cdEncodeGoldrushApi7(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v License) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushApi4(w, v)
+	easyjson6601e8cdEncodeGoldrushApi7(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *License) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushApi4(&r, v)
+	easyjson6601e8cdDecodeGoldrushApi7(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *License) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushApi4(l, v)
+	easyjson6601e8cdDecodeGoldrushApi7(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushApi5(in *jlexer.Lexer, out *ExploreResponse) {
+func easyjson6601e8cdDecodeGoldrushApi8(in *jlexer.Lexer, out *ExploreResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -394,7 +627,7 @@ func easyjson6601e8cdDecodeGoldrushApi5(in *jlexer.Lexer, out *ExploreResponse) 
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushApi5(out *jwriter.Writer, in ExploreResponse) {
+func easyjson6601e8cdEncodeGoldrushApi8(out *jwriter.Writer, in ExploreResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -414,27 +647,27 @@ func easyjson6601e8cdEncodeGoldrushApi5(out *jwriter.Writer, in ExploreResponse)
 // MarshalJSON supports json.Marshaler interface
 func (v ExploreResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushApi5(&w, v)
+	easyjson6601e8cdEncodeGoldrushApi8(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v ExploreResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushApi5(w, v)
+	easyjson6601e8cdEncodeGoldrushApi8(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ExploreResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushApi5(&r, v)
+	easyjson6601e8cdDecodeGoldrushApi8(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *ExploreResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushApi5(l, v)
+	easyjson6601e8cdDecodeGoldrushApi8(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushApi6(in *jlexer.Lexer, out *DigRequest) {
+func easyjson6601e8cdDecodeGoldrushApi9(in *jlexer.Lexer, out *DigRequest) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -471,7 +704,7 @@ func easyjson6601e8cdDecodeGoldrushApi6(in *jlexer.Lexer, out *DigRequest) {
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushApi6(out *jwriter.Writer, in DigRequest) {
+func easyjson6601e8cdEncodeGoldrushApi9(out *jwriter.Writer, in DigRequest) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -501,27 +734,27 @@ func easyjson6601e8cdEncodeGoldrushApi6(out *jwriter.Writer, in DigRequest) {
 // MarshalJSON supports json.Marshaler interface
 func (v DigRequest) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushApi6(&w, v)
+	easyjson6601e8cdEncodeGoldrushApi9(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v DigRequest) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushApi6(w, v)
+	easyjson6601e8cdEncodeGoldrushApi9(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *DigRequest) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushApi6(&r, v)
+	easyjson6601e8cdDecodeGoldrushApi9(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *DigRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushApi6(l, v)
+	easyjson6601e8cdDecodeGoldrushApi9(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushApi7(in *jlexer.Lexer, out *BalanceResponse) {
+func easyjson6601e8cdDecodeGoldrushApi10(in *jlexer.Lexer, out *BalanceResponse) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -558,9 +791,9 @@ func easyjson6601e8cdDecodeGoldrushApi7(in *jlexer.Lexer, out *BalanceResponse) 
 					out.Wallet = (out.Wallet)[:0]
 				}
 				for !in.IsDelim(']') {
-					var v13 uint32
-					v13 = uint32(in.Uint32())
-					out.Wallet = append(out.Wallet, v13)
+					var v16 uint32
+					v16 = uint32(in.Uint32())
+					out.Wallet = append(out.Wallet, v16)
 					in.WantComma()
 				}
 				in.Delim(']')
@@ -575,7 +808,7 @@ func easyjson6601e8cdDecodeGoldrushApi7(in *jlexer.Lexer, out *BalanceResponse) 
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushApi7(out *jwriter.Writer, in BalanceResponse) {
+func easyjson6601e8cdEncodeGoldrushApi10(out *jwriter.Writer, in BalanceResponse) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -591,11 +824,11 @@ func easyjson6601e8cdEncodeGoldrushApi7(out *jwriter.Writer, in BalanceResponse)
 			out.RawString("null")
 		} else {
 			out.RawByte('[')
-			for v14, v15 := range in.Wallet {
-				if v14 > 0 {
+			for v17, v18 := range in.Wallet {
+				if v17 > 0 {
 					out.RawByte(',')
 				}
-				out.Uint32(uint32(v15))
+				out.Uint32(uint32(v18))
 			}
 			out.RawByte(']')
 		}
@@ -606,27 +839,27 @@ func easyjson6601e8cdEncodeGoldrushApi7(out *jwriter.Writer, in BalanceResponse)
 // MarshalJSON supports json.Marshaler interface
 func (v BalanceResponse) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushApi7(&w, v)
+	easyjson6601e8cdEncodeGoldrushApi10(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v BalanceResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushApi7(w, v)
+	easyjson6601e8cdEncodeGoldrushApi10(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *BalanceResponse) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushApi7(&r, v)
+	easyjson6601e8cdDecodeGoldrushApi10(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *BalanceResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushApi7(l, v)
+	easyjson6601e8cdDecodeGoldrushApi10(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushApi8(in *jlexer.Lexer, out *Area) {
+func easyjson6601e8cdDecodeGoldrushApi11(in *jlexer.Lexer, out *Area) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -663,7 +896,7 @@ func easyjson6601e8cdDecodeGoldrushApi8(in *jlexer.Lexer, out *Area) {
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushApi8(out *jwriter.Writer, in Area) {
+func easyjson6601e8cdEncodeGoldrushApi11(out *jwriter.Writer, in Area) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -693,23 +926,23 @@ func easyjson6601e8cdEncodeGoldrushApi8(out *jwriter.Writer, in Area) {
 // MarshalJSON supports json.Marshaler interface
 func (v Area) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushApi8(&w, v)
+	easyjson6601e8cdEncodeGoldrushApi11(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Area) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushApi8(w, v)
+	easyjson6601e8cdEncodeGoldrushApi11(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Area) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushApi8(&r, v)
+	easyjson6601e8cdDecodeGoldrushApi11(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Area) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushApi8(l, v)
+	easyjson6601e8cdDecodeGoldrushApi11(l, v)
 }

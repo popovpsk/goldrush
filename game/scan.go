@@ -54,6 +54,7 @@ func (d *Digger) clearSector(area *api.Area, amount int) {
 				d.apiClient.Explore(req, res)
 				d.metrics.Add("explore 1", time.Since(t))
 				if res.Amount > 0 {
+					//d.dig(int32(x), int32(y), int32(res.Amount))
 					d.pointQueue.Push(pointqueue.DigPoint{X: int32(x), Y: int32(y), Amount: int32(res.Amount)})
 					amount -= res.Amount
 					if amount <= 0 {
@@ -84,6 +85,7 @@ func (d *Digger) clearSector(area *api.Area, amount int) {
 				req.PosY = y
 				d.apiClient.Explore(req, res)
 				if res.Amount > 0 {
+					//d.dig(int32(x), int32(y), int32(res.Amount))
 					d.pointQueue.Push(pointqueue.DigPoint{X: int32(x), Y: int32(y), Amount: int32(res.Amount)})
 					amount -= res.Amount
 					if amount <= 0 {

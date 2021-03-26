@@ -3,7 +3,7 @@ package game
 import (
 	"fmt"
 	"goldrush/api"
-	"sync/atomic"
+	"goldrush/datastruct/pointqueue"
 	"time"
 )
 
@@ -12,13 +12,18 @@ func (d *Digger) digWork(state *int) {
 	d.dig(p.X, p.Y, p.Amount)
 }
 
-var qqq = make([]int32, 10)
-var qqq2 = make([]int32, 10)
-
-func EndLog() {
-	for i, v := range qqq {
-		fmt.Printf("%v:%v; ", i+1, qqq2[i]/v)
+func (d *Digger) check(p pointqueue.DigPoint) {
+	res := &api.ExploreResponse{}
+	d.apiClient.Explore(&api.Area{
+		PosX:  int(p.X),
+		PosY:  int(p.Y),
+		SizeX: 1,
+		SizeY: 1,
+	}, res)
+	if res.Amount == 0 {
+		fmt.Printf("%v:%v|", p.X, p.Y)
 	}
+	return
 }
 
 func (d *Digger) dig(x, y, amount int32) {
@@ -26,12 +31,15 @@ func (d *Digger) dig(x, y, amount int32) {
 	var license *api.License
 
 	for depth <= 10 && amount > 0 {
+		t1 := time.Now()
 		if license == nil {
 			license = d.getLicense()
 		} else if license.DigUsed >= license.DigAllowed {
 			d.returnLicense(license)
 			license = d.getLicense()
 		}
+		d.metrics.Add("getLicense", time.Since(t1))
+
 		req := &api.DigRequest{LicenseID: license.ID, PosX: x, PosY: y, Depth: depth}
 		res := &api.Treasures{}
 		t := time.Now()
@@ -41,24 +49,15 @@ func (d *Digger) dig(x, y, amount int32) {
 		license.DigUsed++
 		depth++
 
-		atomic.AddInt32(&qqq[depth-2], 1)
-		atomic.AddInt32(&qqq2[depth-2], int32(el.Milliseconds()))
-
 		if ok {
-			d.metrics.AddInt("array gold len", len(*res))
-
-			money := 0
 			for _, r := range *res {
 				s := &api.Payment{}
+				t2 := time.Now()
 				d.apiClient.Cash(r, s)
-				money += len(*s)
+				d.metrics.Add("cash", time.Since(t2))
 				d.bank.Store(*s)
 			}
-
-			d.metrics.AddInt(fmt.Sprintf("DP:%v", depth), money)
-			d.goldPot.Store(*res)
 			amount--
-
 		}
 	}
 	d.returnLicense(license)

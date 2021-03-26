@@ -1,9 +1,7 @@
 package game
 
 import (
-	"fmt"
 	"goldrush/api"
-	"goldrush/cheat"
 	"goldrush/datastruct/areaqueue"
 	"goldrush/datastruct/bank"
 	"goldrush/datastruct/foreman"
@@ -11,7 +9,6 @@ import (
 	"goldrush/datastruct/pointqueue"
 	"goldrush/metrics"
 	"goldrush/utils"
-	"runtime"
 	"time"
 )
 
@@ -23,11 +20,14 @@ type Digger struct {
 	metrics    *metrics.Svc
 	foreman    *foreman.Foreman
 	goldPot    *goldpot.GoldPot
-	licenses   chan *api.License
 
+	licenses       chan *api.License
 	activeLicenses int32
 	licWakeCh      chan struct{}
-	areaCh         chan *api.Area
+
+	areaCh chan *api.Area
+
+	pointsCh chan pointqueue.DigPoint
 }
 
 func NewDigger(client *api.Client, metrics *metrics.Svc) *Digger {
@@ -45,7 +45,6 @@ func NewDigger(client *api.Client, metrics *metrics.Svc) *Digger {
 	f := foreman.New()
 	f.AddWorker(firstScanWorker, d.fstScanWork)
 	f.AddWorker(zoneScanWorker, d.zoneScanWork)
-	f.AddWorker(pointScanWorker, func(state *int) {})
 	f.AddWorker(licensesWorker, d.licensesWork)
 	f.AddWorker(digWorker, d.digWork)
 	f.AddWorker(exchangeCashWorker, d.exchangeCashWork)
@@ -54,14 +53,13 @@ func NewDigger(client *api.Client, metrics *metrics.Svc) *Digger {
 }
 
 const (
-	sizeX = 250
+	sizeX = 100
 	sizeY = 100
 )
 
 const (
 	firstScanWorker = iota
 	zoneScanWorker
-	pointScanWorker
 	licensesWorker
 	digWorker
 	exchangeCashWorker
@@ -71,30 +69,13 @@ func (d *Digger) Start() {
 	go d.divideGameArea()
 	d.foreman.Start(licensesWorker, 1)
 
-	go func() {
-		for _, arr := range cheat.Points {
-			for _, v := range arr {
-				d.pointQueue.Push(pointqueue.DigPoint{
-					X:      v.X,
-					Y:      v.Y,
-					Amount: v.Amount,
-				})
-			}
-			runtime.Gosched()
-		}
-	}()
-
-	//d.foreman.Start(firstScanWorker, 1)
-	//d.foreman.Start(zoneScanWorker, 4)
+	d.foreman.Start(firstScanWorker, 1)
+	d.foreman.Start(zoneScanWorker, 4)
 	d.foreman.Start(digWorker, 4)
-	<-time.After(time.Second * 2)
-	//d.foreman.Start(exchangeCashWorker, 2)
 
 	<-utils.WaitGameTime(time.Minute*9 + time.Second*30)
-	fmt.Println("bank cnt: ", d.bank.Count())
-	//d.foreman.ChangeState(zoneScanWorker, foreman.Slow, 4)
-	//d.foreman.ChangeState(zoneScanWorker, foreman.Slow, 4)
-	<-time.After(utils.GetEndDelay() - time.Second*3)
+	d.foreman.ChangeState(zoneScanWorker, foreman.Slow, 4)
+	<-time.After(utils.GetEndDelay() - time.Second*1)
 	d.foreman.StopAll(licensesWorker)
 }
 

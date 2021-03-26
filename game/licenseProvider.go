@@ -32,11 +32,12 @@ func (d *Digger) licensesWork(state *int) {
 	}
 	license := &api.License{}
 	t := time.Now()
-	var p int32 = 22
+	var p int32 = 21
 	if coins, ok := d.bank.Get(p); ok {
 		d.apiClient.PostLicenses(coins, license)
 		d.metrics.AddInt("allowed", license.DigAllowed)
 	} else {
+		d.metrics.AddInt("free", 1)
 		d.apiClient.PostLicenses(nil, license)
 	}
 	d.metrics.Add("license", time.Since(t))

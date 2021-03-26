@@ -1,5 +1,10 @@
 package api
 
+import (
+	"fmt"
+	"sort"
+)
+
 //go:generate easyjson
 
 //easyjson:json
@@ -45,8 +50,31 @@ type (
 	Point struct {
 		X, Y, Amount int32
 	}
+
+	Output []PointInfo
+
+	PointInfo struct {
+		X, Y  int32
+		Depth int32
+		Money int32
+	}
 )
 
 func (v *Area) Size() int {
 	return v.SizeX * v.SizeY
+}
+
+func (o *Output) Result() string {
+	result := ""
+	sort.Slice(*o, func(i, j int) bool {
+		return (*o)[i].Money > (*o)[j].Money
+	})
+	for _, v := range *o {
+		result += fmt.Sprintf("%v:%v:%v|", v.X, v.Y, v.Money)
+	}
+	return result
+}
+
+func (p *PointInfo) GetKey() string {
+	return fmt.Sprintf("%v:%v", p.X, p.Y)
 }

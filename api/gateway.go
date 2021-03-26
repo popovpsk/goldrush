@@ -8,10 +8,9 @@ import (
 )
 
 type request struct {
-	req     *fasthttp.Request
-	res     *fasthttp.Response
-	reqType byte
-	done    chan struct{}
+	req  *fasthttp.Request
+	res  *fasthttp.Response
+	done chan struct{}
 }
 
 type Gateway struct {
@@ -49,16 +48,16 @@ func NewGateWay() *Gateway {
 	return g
 }
 
-const slaves = 20
-const rpc = 1700
+const slaves = 10
+const rpc = 1400
+const parallelRequests = 3
+
 const delay = 1000*1000/rpc*time.Microsecond - 10*time.Microsecond
-const parallelRequests = 4
 
 func (g *Gateway) Do(req *fasthttp.Request, res *fasthttp.Response, t byte) {
 	r := <-g.pool
 	r.req = req
 	r.res = res
-	r.reqType = t
 	g.requests <- r
 	<-r.done
 }
