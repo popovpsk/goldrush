@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/mailru/easyjson"
 	"github.com/valyala/fasthttp"
+	"goldrush/types"
 	"sync/atomic"
 )
 
@@ -14,7 +15,6 @@ const headerAcceptEncoding = "gzip, deflate"
 type Client struct {
 	cl             *Gateway
 	exploreURI     []byte
-	getBalanceURI  []byte
 	licensesURI    []byte
 	digURI         []byte
 	cashURI        []byte
@@ -34,7 +34,6 @@ func NewClient(url string, gw *Gateway) *Client {
 	return &Client{
 		cl:             gw,
 		exploreURI:     []byte(url + "/explore"),
-		getBalanceURI:  []byte(url + "/balance"),
 		licensesURI:    []byte(url + "/licenses"),
 		digURI:         []byte(url + "/dig"),
 		cashURI:        []byte(url + "/cash"),
@@ -42,7 +41,7 @@ func NewClient(url string, gw *Gateway) *Client {
 	}
 }
 
-func (c *Client) Explore(area *Area, response *ExploreResponse) {
+func (c *Client) Explore(area *types.Area, response *types.ExploreResponse) {
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	req.SetRequestURIBytes(c.exploreURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
@@ -64,7 +63,7 @@ func (c *Client) Explore(area *Area, response *ExploreResponse) {
 	fasthttp.ReleaseResponse(res)
 }
 
-func (c *Client) PostLicenses(wallet PostLicenseRequest, response *License) {
+func (c *Client) PostLicenses(wallet types.PostLicenseRequest, response *types.License) {
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	req.SetRequestURIBytes(c.licensesURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
@@ -94,7 +93,7 @@ func (c *Client) PostLicenses(wallet PostLicenseRequest, response *License) {
 	return
 }
 
-func (c *Client) Dig(request *DigRequest, response *Treasures) bool {
+func (c *Client) Dig(request *types.DigRequest, response *types.Treasures) bool {
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	req.SetRequestURIBytes(c.digURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
@@ -125,7 +124,7 @@ func (c *Client) Dig(request *DigRequest, response *Treasures) bool {
 	return true
 }
 
-func (c *Client) Cash(request string, response *Payment) {
+func (c *Client) Cash(request string, response *types.Payment) {
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	req.SetRequestURIBytes(c.cashURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
@@ -139,40 +138,9 @@ func (c *Client) Cash(request string, response *Payment) {
 			break
 		}
 		atomic.AddInt32(&ErrcntCash, 1)
-
 	}
 	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
 		fmt.Println(err.Error())
-	}
-	fasthttp.ReleaseRequest(req)
-	fasthttp.ReleaseResponse(res)
-}
-
-func (c *Client) GetBalance(response *BalanceResponse) {
-	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
-	req.SetRequestURIBytes(c.getBalanceURI)
-	req.Header.SetContentType(contentTypeJson)
-
-	c.cl.Do(req, res, 0)
-
-	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
-		fmt.Println(err)
-	}
-	fasthttp.ReleaseRequest(req)
-	fasthttp.ReleaseResponse(res)
-}
-
-func (c *Client) GetLicenses(response *LicensesResponse) {
-	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
-	req.SetRequestURIBytes(c.licensesURI)
-	for {
-		c.cl.Do(req, res, 0)
-		if res.StatusCode() == 200 {
-			break
-		}
-	}
-	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
-		fmt.Println(err)
 	}
 	fasthttp.ReleaseRequest(req)
 	fasthttp.ReleaseResponse(res)

@@ -2,19 +2,19 @@ package areaqueue
 
 import (
 	"container/heap"
-	"goldrush/api"
+	"goldrush/types"
 )
 
 type PriorityQueue []*Item
 
 type Item struct {
 	priority int
-	value    *api.ExploreResponse
+	value    *types.ExploreResponse
 	index    int
 }
 
 // update modifies the priority and value of an Item in the queue.
-func (pq *PriorityQueue) update(item *Item, value *api.ExploreResponse, priority int) {
+func (pq *PriorityQueue) update(item *Item, value *types.ExploreResponse, priority int) {
 	item.value = value
 	item.priority = priority
 	heap.Fix(pq, item.index)

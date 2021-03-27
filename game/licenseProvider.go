@@ -1,17 +1,17 @@
 package game
 
 import (
-	"goldrush/api"
 	"goldrush/datastruct/foreman"
+	"goldrush/types"
 	"sync/atomic"
 	"time"
 )
 
-func (d *Digger) getLicense() *api.License {
+func (d *Digger) getLicense() *types.License {
 	return <-d.licenses
 }
 
-func (d *Digger) returnLicense(license *api.License) {
+func (d *Digger) returnLicense(license *types.License) {
 	if license.DigUsed >= license.DigAllowed {
 		atomic.AddInt32(&d.activeLicenses, -1)
 		select {
@@ -30,12 +30,12 @@ func (d *Digger) licensesWork(state *int) {
 	if *state == foreman.Stopped {
 		return
 	}
-	license := &api.License{}
+	license := &types.License{}
 	t := time.Now()
 	var p int32 = 21
 	if coins, ok := d.bank.Get(p); ok {
 		d.apiClient.PostLicenses(coins, license)
-		d.metrics.AddInt("allowed", license.DigAllowed)
+		d.metrics.AddInt("allowed", int64(license.DigAllowed))
 	} else {
 		d.metrics.AddInt("free", 1)
 		d.apiClient.PostLicenses(nil, license)

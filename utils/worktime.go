@@ -7,7 +7,7 @@ import (
 var startTime time.Time
 
 func GetEndDelay() time.Duration {
-	return time.Minute*10 - time.Since(startTime) - time.Second*2
+	return time.Minute*10 - time.Since(startTime)
 }
 
 func SetStartTime(t time.Time) {

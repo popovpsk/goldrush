@@ -70,7 +70,7 @@ func (s *Svc) Add(name string, t time.Duration) {
 	}
 }
 
-func (s *Svc) AddInt(name string, v int) {
+func (s *Svc) AddInt(name string, v int64) {
 	if !metricsEnabled {
 		return
 	}
@@ -78,8 +78,8 @@ func (s *Svc) AddInt(name string, v int) {
 	defer s.m.Unlock()
 	_, ok := s.data[name]
 	if ok {
-		s.data[name] = append(s.data[name], int64(v))
+		s.data[name] = append(s.data[name], v)
 	} else {
-		s.data[name] = []int64{int64(v)}
+		s.data[name] = []int64{v}
 	}
 }

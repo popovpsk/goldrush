@@ -1,7 +1,7 @@
 package areaqueue
 
 import (
-	"goldrush/api"
+	"goldrush/types"
 	"testing"
 	"time"
 )
@@ -9,10 +9,10 @@ import (
 func TestAreaQueue(t *testing.T) {
 	aq := NewAreaQueue()
 
-	aq.Push(&api.ExploreResponse{Area: api.Area{SizeX: 100, SizeY: 100}, Amount: 11})
-	aq.Push(&api.ExploreResponse{Area: api.Area{SizeX: 100, SizeY: 100}, Amount: 1114})
-	aq.Push(&api.ExploreResponse{Area: api.Area{SizeX: 100, SizeY: 100}, Amount: 1115})
-	aq.Push(&api.ExploreResponse{Area: api.Area{SizeX: 100, SizeY: 100}, Amount: 32})
+	aq.Push(&types.ExploreResponse{Area: types.Area{SizeX: 100, SizeY: 100}, Amount: 11})
+	aq.Push(&types.ExploreResponse{Area: types.Area{SizeX: 100, SizeY: 100}, Amount: 1114})
+	aq.Push(&types.ExploreResponse{Area: types.Area{SizeX: 100, SizeY: 100}, Amount: 1115})
+	aq.Push(&types.ExploreResponse{Area: types.Area{SizeX: 100, SizeY: 100}, Amount: 32})
 
 	for _, a := range []int{1115, 1114, 32, 11} {
 		res := aq.Peek()
@@ -23,9 +23,9 @@ func TestAreaQueue(t *testing.T) {
 
 	go func() {
 		<-time.After(time.Millisecond * 2)
-		aq.Push(&api.ExploreResponse{Area: api.Area{SizeX: 100, SizeY: 100}, Amount: 66})
-		aq.Push(&api.ExploreResponse{Area: api.Area{SizeX: 100, SizeY: 100}, Amount: 55})
-		aq.Push(&api.ExploreResponse{Area: api.Area{SizeX: 100, SizeY: 100}, Amount: 23})
+		aq.Push(&types.ExploreResponse{Area: types.Area{SizeX: 100, SizeY: 100}, Amount: 66})
+		aq.Push(&types.ExploreResponse{Area: types.Area{SizeX: 100, SizeY: 100}, Amount: 55})
+		aq.Push(&types.ExploreResponse{Area: types.Area{SizeX: 100, SizeY: 100}, Amount: 23})
 	}()
 
 	if s := aq.Peek(); s.Amount != 66 {
@@ -34,7 +34,7 @@ func TestAreaQueue(t *testing.T) {
 
 	<-time.After(time.Millisecond * 4)
 
-	aq.Push(&api.ExploreResponse{Area: api.Area{SizeX: 100, SizeY: 100}, Amount: 11})
+	aq.Push(&types.ExploreResponse{Area: types.Area{SizeX: 100, SizeY: 100}, Amount: 11})
 
 	if s := aq.Peek(); s.Amount != 55 {
 		t.Errorf("Amount:%v expected:= %v", s.Amount, 55)

@@ -49,7 +49,7 @@ func NewGateWay() *Gateway {
 }
 
 const slaves = 10
-const rpc = 1400
+const rpc = 1500
 const parallelRequests = 3
 
 const delay = 1000*1000/rpc*time.Microsecond - 10*time.Microsecond

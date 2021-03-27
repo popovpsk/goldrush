@@ -2,21 +2,20 @@ package game
 
 import (
 	"fmt"
-	"goldrush/api"
-	"goldrush/datastruct/pointqueue"
+	"goldrush/types"
 	"time"
 )
 
-func (d *Digger) scan(area *api.Area) {
-	res := &api.ExploreResponse{}
+func (d *Digger) scan(area *types.Area) {
+	res := &types.ExploreResponse{}
 	t := time.Now()
 	d.apiClient.Explore(area, res)
 	d.metrics.Add(fmt.Sprintf("explore %v", area.SizeX*area.SizeY), time.Since(t))
 	d.areaQueue.Push(res)
 }
 
-func (d *Digger) bSearch(zone *api.ExploreResponse) {
-	res := &api.ExploreResponse{}
+func (d *Digger) bSearch(zone *types.ExploreResponse) {
+	res := &types.ExploreResponse{}
 
 	square := zone.Area.Size()
 	if square <= 16 {
@@ -24,7 +23,7 @@ func (d *Digger) bSearch(zone *api.ExploreResponse) {
 		return
 	}
 
-	res2 := api.ExploreResponse{
+	res2 := types.ExploreResponse{
 		Area: *d.divideArea(&zone.Area),
 	}
 
@@ -37,12 +36,12 @@ func (d *Digger) bSearch(zone *api.ExploreResponse) {
 	d.areaQueue.Push(&res2)
 }
 
-func (d *Digger) clearSector(area *api.Area, amount int) {
-	req := &api.Area{
+func (d *Digger) clearSector(area *types.Area, amount int32) {
+	req := &types.Area{
 		SizeX: 1,
 		SizeY: 1,
 	}
-	res := &api.ExploreResponse{}
+	res := &types.ExploreResponse{}
 
 	if area.SizeX < area.SizeY {
 		for x := area.PosX; x < area.PosX+area.SizeX; {
@@ -54,8 +53,7 @@ func (d *Digger) clearSector(area *api.Area, amount int) {
 				d.apiClient.Explore(req, res)
 				d.metrics.Add("explore 1", time.Since(t))
 				if res.Amount > 0 {
-					//d.dig(int32(x), int32(y), int32(res.Amount))
-					d.pointQueue.Push(pointqueue.DigPoint{X: int32(x), Y: int32(y), Amount: int32(res.Amount)})
+					d.dig(x, y, res.Amount)
 					amount -= res.Amount
 					if amount <= 0 {
 						return
@@ -64,7 +62,7 @@ func (d *Digger) clearSector(area *api.Area, amount int) {
 			}
 			x++
 
-			tmp := api.Area{
+			tmp := types.Area{
 				PosX:  area.PosX + (x - area.PosX),
 				SizeX: area.SizeX - (x - area.PosX),
 				PosY:  area.PosY,
@@ -73,7 +71,7 @@ func (d *Digger) clearSector(area *api.Area, amount int) {
 			if tmp.SizeX == 0 || tmp.Size() <= 4 || p <= float32(tmp.Size())/float32(amount) {
 				continue
 			} else {
-				d.areaQueue.Push(&api.ExploreResponse{Area: tmp, Amount: amount})
+				d.areaQueue.Push(&types.ExploreResponse{Area: tmp, Amount: amount})
 				return
 			}
 		}
@@ -85,8 +83,7 @@ func (d *Digger) clearSector(area *api.Area, amount int) {
 				req.PosY = y
 				d.apiClient.Explore(req, res)
 				if res.Amount > 0 {
-					//d.dig(int32(x), int32(y), int32(res.Amount))
-					d.pointQueue.Push(pointqueue.DigPoint{X: int32(x), Y: int32(y), Amount: int32(res.Amount)})
+					d.dig(x, y, res.Amount)
 					amount -= res.Amount
 					if amount <= 0 {
 						return
@@ -94,7 +91,7 @@ func (d *Digger) clearSector(area *api.Area, amount int) {
 				}
 			}
 			y++
-			tmp := api.Area{
+			tmp := types.Area{
 				PosX:  area.PosX,
 				SizeX: area.SizeX,
 				PosY:  area.PosY + (y - area.PosY),
@@ -103,14 +100,14 @@ func (d *Digger) clearSector(area *api.Area, amount int) {
 			if tmp.SizeY == 0 || tmp.Size() <= 4 || p <= float32(amount)/float32(area.Size()) {
 				continue
 			} else {
-				d.areaQueue.Push(&api.ExploreResponse{Area: tmp, Amount: amount})
+				d.areaQueue.Push(&types.ExploreResponse{Area: tmp, Amount: amount})
 				return
 			}
 		}
 	}
 }
 
-func (d *Digger) divideArea(a *api.Area) *api.Area {
+func (d *Digger) divideArea(a *types.Area) *types.Area {
 	b := *a
 	if a.SizeX >= a.SizeY {
 		a.SizeX = a.SizeX / 2

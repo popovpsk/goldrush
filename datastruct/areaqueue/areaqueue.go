@@ -2,20 +2,19 @@ package areaqueue
 
 import (
 	"container/heap"
+	"goldrush/types"
 	"sync"
-
-	"goldrush/api"
 )
 
 type AreaQueue struct {
 	pq *PriorityQueue
 	l  sync.Mutex
-	ch chan *api.ExploreResponse
+	ch chan *types.ExploreResponse
 }
 
 func NewAreaQueue() *AreaQueue {
 	aq := &AreaQueue{
-		ch: make(chan *api.ExploreResponse),
+		ch: make(chan *types.ExploreResponse),
 	}
 	pq := make(PriorityQueue, 0, 2000)
 	aq.pq = &pq
@@ -23,7 +22,7 @@ func NewAreaQueue() *AreaQueue {
 	return aq
 }
 
-func (q *AreaQueue) Push(zone *api.ExploreResponse) {
+func (q *AreaQueue) Push(zone *types.ExploreResponse) {
 	select {
 	case q.ch <- zone:
 		return
@@ -39,7 +38,7 @@ func (q *AreaQueue) Push(zone *api.ExploreResponse) {
 	heap.Push(q.pq, i)
 }
 
-func (q *AreaQueue) Peek() *api.ExploreResponse {
+func (q *AreaQueue) Peek() *types.ExploreResponse {
 	q.l.Lock()
 	if q.pq.Len() == 0 {
 		q.l.Unlock()

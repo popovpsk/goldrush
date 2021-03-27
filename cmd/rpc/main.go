@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/montanaflynn/stats"
 	"goldrush/api"
+	"goldrush/types"
 	"goldrush/utils"
 	"os"
 	"sync"
@@ -80,8 +81,8 @@ func scan() {
 	i := 0
 	for x := 0; x < 3500; x++ {
 		for y := 0; y < 3500; y++ {
-			res := &api.ExploreResponse{}
-			client.Explore(&api.Area{PosX: x, PosY: y, SizeX: 1, SizeY: 1}, res)
+			res := &types.ExploreResponse{}
+			client.Explore(&types.Area{PosX: x, PosY: y, SizeX: 1, SizeY: 1}, res)
 			if res.Amount > 0 {
 				fmt.Println(x, y)
 				i++
@@ -95,7 +96,7 @@ func scan() {
 
 func startWorker(client *api.Client, x int) {
 	go func() {
-		area := &api.Area{
+		area := &types.Area{
 			SizeX: 1,
 			SizeY: 1,
 		}
@@ -111,7 +112,7 @@ func startWorker(client *api.Client, x int) {
 				area.PosX = x
 				area.PosY = y
 				t := time.Now()
-				client.Explore(area, &api.ExploreResponse{})
+				client.Explore(area, &types.ExploreResponse{})
 				d := time.Now().Sub(t)
 				result = append(result, d)
 				x++
