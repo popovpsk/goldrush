@@ -6,6 +6,6 @@ RUN CGO_ENABLED=0 go build -o app .
 
 FROM scratch
 
-ENV GOGC=1000
+ENV GOGC=off
 COPY --from=builder /go/src/app/app .
 ENTRYPOINT ["./app"]

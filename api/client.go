@@ -2,10 +2,11 @@ package api
 
 import (
 	"fmt"
-	"github.com/mailru/easyjson"
-	"github.com/valyala/fasthttp"
 	"goldrush/types"
 	"sync/atomic"
+
+	"github.com/mailru/easyjson"
+	"github.com/valyala/fasthttp"
 )
 
 const contentTypeJson = "application/json"
@@ -43,16 +44,12 @@ func NewClient(url string, gw *Gateway) *Client {
 
 func (c *Client) Explore(area *types.Area, response *types.ExploreResponse) {
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
+	c.AddHeaders(req)
 	req.SetRequestURIBytes(c.exploreURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
-	req.Header.SetContentType(contentTypeJson)
 	easyjson.MarshalToWriter(area, req.BodyWriter())
 	for {
-		if area.Size() >= 50 {
-			c.cl.Do(req, res, 3)
-		} else {
-			c.cl.Do(req, res, 0)
-		}
+		c.cl.Do(req, res, 0)
 		if res.StatusCode() == 200 {
 			break
 		}
@@ -67,9 +64,7 @@ func (c *Client) PostLicenses(wallet types.PostLicenseRequest, response *types.L
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	req.SetRequestURIBytes(c.licensesURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
-	req.Header.SetContentType(contentTypeJson)
-	req.Header.Add(fasthttp.HeaderAccept, headerAccept)
-	req.Header.Add(fasthttp.HeaderAcceptEncoding, headerAcceptEncoding)
+	c.AddHeaders(req)
 
 	if wallet != nil {
 		easyjson.MarshalToWriter(wallet, req.BodyWriter())
@@ -97,9 +92,7 @@ func (c *Client) Dig(request *types.DigRequest, response *types.Treasures) bool 
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	req.SetRequestURIBytes(c.digURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
-	req.Header.SetContentType(contentTypeJson)
-	req.Header.Add(fasthttp.HeaderAccept, headerAccept)
-	req.Header.Add(fasthttp.HeaderAcceptEncoding, headerAcceptEncoding)
+	c.AddHeaders(req)
 
 	easyjson.MarshalToWriter(request, req.BodyWriter())
 
@@ -128,9 +121,8 @@ func (c *Client) Cash(request string, response *types.Payment) {
 	req, res := fasthttp.AcquireRequest(), fasthttp.AcquireResponse()
 	req.SetRequestURIBytes(c.cashURI)
 	req.Header.SetMethod(fasthttp.MethodPost)
-	req.Header.SetContentType(contentTypeJson)
-	req.Header.Add(fasthttp.HeaderAccept, headerAccept)
-	req.Header.Add(fasthttp.HeaderAcceptEncoding, headerAcceptEncoding)
+	c.AddHeaders(req)
+
 	req.SetBodyRaw([]byte(fmt.Sprintf("\"%s\"", request)))
 	for {
 		c.cl.Do(req, res, 3)
@@ -144,4 +136,10 @@ func (c *Client) Cash(request string, response *types.Payment) {
 	}
 	fasthttp.ReleaseRequest(req)
 	fasthttp.ReleaseResponse(res)
+}
+
+func (c *Client) AddHeaders(req *fasthttp.Request) {
+	req.Header.SetContentType(contentTypeJson)
+	req.Header.Add(fasthttp.HeaderAccept, headerAccept)
+	req.Header.Add(fasthttp.HeaderAcceptEncoding, headerAcceptEncoding)
 }

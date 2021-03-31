@@ -4,9 +4,6 @@ import (
 	"goldrush/api"
 	"goldrush/datastruct/areaqueue"
 	"goldrush/datastruct/bank"
-	"goldrush/datastruct/foreman"
-	"goldrush/datastruct/goldpot"
-	"goldrush/datastruct/pointqueue"
 	"goldrush/metrics"
 	"goldrush/types"
 	"goldrush/utils"
@@ -18,34 +15,25 @@ type Digger struct {
 	bank      *bank.Bank
 	areaQueue *areaqueue.AreaQueue
 	metrics   *metrics.Svc
-	foreman   *foreman.Foreman
-	goldPot   *goldpot.GoldPot
-
-	licenses       chan *types.License
-	activeLicenses int32
-	licWakeCh      chan struct{}
+	foreman   *Foreman
+	licenses  *LicenseProvider
 
 	areaCh chan *types.Area
-
-	pointsCh chan pointqueue.DigPoint
 }
 
-func NewDigger(client *api.Client, metrics *metrics.Svc) *Digger {
+func NewDigger(licenseProvider *LicenseProvider, client *api.Client, metrics *metrics.Svc, bank *bank.Bank) *Digger {
 	d := &Digger{
 		apiClient: client,
-		licenses:  make(chan *types.License, 10),
-		licWakeCh: make(chan struct{}),
-		bank:      bank.NewBank(),
+		licenses:  licenseProvider,
+		bank:      bank,
 		metrics:   metrics,
 		areaCh:    make(chan *types.Area, 50),
 		areaQueue: areaqueue.NewAreaQueue(),
-		goldPot:   goldpot.New(),
 	}
-	f := foreman.New()
-	f.AddWorker(firstScanWorker, d.fstScanWork)
-	f.AddWorker(zoneScanWorker, d.zoneScanWork)
-	f.AddWorker(licensesWorker, d.licensesWork)
-	f.AddWorker(exchangeCashWorker, d.exchangeCashWork)
+	f := New()
+	f.AddWorker(firstScanWorker, d.firstScanWork)
+	f.AddWorker(zoneScanWorker, d.scanWork)
+	f.AddWorker(licensesWorker, d.licenses.LicensesWork)
 	d.foreman = f
 	return d
 }
@@ -59,20 +47,17 @@ const (
 	firstScanWorker = iota
 	zoneScanWorker
 	licensesWorker
-	exchangeCashWorker
 )
 
 func (d *Digger) Start() {
 	go d.divideGameArea()
 	d.foreman.Start(licensesWorker, 1)
 
-	d.foreman.Start(firstScanWorker, 1)
+	d.foreman.Start(firstScanWorker, 2)
 	d.foreman.Start(zoneScanWorker, 6)
 
 	<-utils.WaitGameTime(time.Minute * 8)
-	d.foreman.ChangeState(zoneScanWorker, foreman.Slow, 6)
-	<-time.After(utils.GetEndDelay() - time.Second*1)
-	d.foreman.StopAll(licensesWorker)
+	d.foreman.ChangeState(zoneScanWorker, Slow, 6)
 }
 
 func (d *Digger) divideGameArea() {
@@ -84,30 +69,170 @@ func (d *Digger) divideGameArea() {
 	close(d.areaCh)
 }
 
-func (d *Digger) fstScanWork(state *int) {
+func (d *Digger) firstScanWork(state *int) {
 	a, ok := <-d.areaCh
 	if ok {
-		d.scan(a)
+		res := &types.ExploreResponse{}
+		d.apiClient.Explore(a, res)
+		d.areaQueue.Push(res)
 	} else {
-		*state = foreman.Stopped
+		*state = Stopped
 	}
 }
 
-func (d *Digger) zoneScanWork(state *int) {
+func (d *Digger) scanWork(state *int) {
 	req := d.areaQueue.Peek()
-	if *state == foreman.Slow && req.Area.Size() > 150 {
+	if *state == Slow && req.Area.Size() > 150 {
 		return
 	} else {
-		d.bSearch(req)
+		d.search(req)
 	}
 }
 
-func (d *Digger) exchangeCashWork(state *int) {
-	c := d.goldPot.Get()
-	p := make([]uint32, 0, 64)
-	var res types.Payment = p
-	t := time.Now()
-	d.apiClient.Cash(c, &res)
-	d.metrics.Add("cash", time.Since(t))
-	d.bank.Store(res)
+func (d *Digger) dig(x, y, amount int32) {
+	var depth int32 = 1
+	var license *types.License
+
+	request := &types.DigRequest{}
+	response := make(types.Treasures, 0, 1)
+
+	for depth <= 10 && amount > 0 {
+		if license == nil {
+			license = d.licenses.GetLicense()
+		} else if license.DigUsed >= license.DigAllowed {
+			d.licenses.ReturnLicense(license)
+			license = d.licenses.GetLicense()
+		}
+
+		request.LicenseID = license.ID
+		request.PosX = x
+		request.PosY = y
+		request.Depth = depth
+
+		t := time.Now()
+		ok := d.apiClient.Dig(request, &response)
+		el := time.Since(t)
+		d.metrics.Add("dig", el)
+		license.DigUsed++
+		depth++
+
+		if ok {
+			for _, r := range response {
+				s := &types.Payment{}
+				t2 := time.Now()
+				d.apiClient.Cash(r, s)
+				d.metrics.Add("cash", time.Since(t2))
+				d.bank.Store(*s)
+			}
+			amount--
+			response = response[:0]
+		}
+	}
+	d.licenses.ReturnLicense(license)
+}
+
+func (d *Digger) search(zone *types.ExploreResponse) {
+	res := &types.ExploreResponse{}
+
+	if zone.Area.Size() <= 16 {
+		d.exploreSector(&zone.Area, zone.Amount)
+		return
+	}
+
+	res2 := types.ExploreResponse{Area: *d.divideArea(&zone.Area)}
+
+	d.apiClient.Explore(&zone.Area, res)
+	d.areaQueue.Push(res)
+
+	res2.Amount = zone.Amount - res.Amount
+	d.areaQueue.Push(&res2)
+}
+
+func (d *Digger) exploreSector(area *types.Area, amount int32) {
+	req := &types.Area{
+		SizeX: 1,
+		SizeY: 1,
+	}
+	res := &types.ExploreResponse{}
+
+	if area.SizeX < area.SizeY {
+		for x := area.PosX; x < area.PosX+area.SizeX; {
+			p := float32(amount) / float32(area.Size())
+			//y line
+			for y := area.PosY; y < area.PosY+area.SizeY; y++ {
+				req.PosX = x
+				req.PosY = y
+				t := time.Now()
+				d.apiClient.Explore(req, res)
+				d.metrics.Add("explore 1", time.Since(t))
+				if res.Amount > 0 {
+					d.dig(x, y, res.Amount)
+					amount -= res.Amount
+					if amount <= 0 {
+						return
+					}
+				}
+			}
+
+			x++
+
+			tmp := types.Area{
+				PosX:  area.PosX + (x - area.PosX),
+				SizeX: area.SizeX - (x - area.PosX),
+				PosY:  area.PosY,
+				SizeY: area.SizeY,
+			}
+			if tmp.SizeX == 0 || p <= float32(tmp.Size())/float32(amount) {
+				continue
+			} else {
+				d.areaQueue.Push(&types.ExploreResponse{Area: tmp, Amount: amount})
+				return
+			}
+		}
+	} else {
+		for y := area.PosY; y < area.PosY+area.SizeY; {
+			p := float32(amount) / float32(area.Size())
+			//x line
+			for x := area.PosX; x < area.PosX+area.SizeX; x++ {
+				req.PosX = x
+				req.PosY = y
+				d.apiClient.Explore(req, res)
+				if res.Amount > 0 {
+					d.dig(x, y, res.Amount)
+					amount -= res.Amount
+					if amount <= 0 {
+						return
+					}
+				}
+			}
+
+			y++
+			tmp := types.Area{
+				PosX:  area.PosX,
+				SizeX: area.SizeX,
+				PosY:  area.PosY + (y - area.PosY),
+				SizeY: area.SizeY - (y - area.PosY),
+			}
+			if tmp.SizeY == 0 || p <= float32(amount)/float32(area.Size()) {
+				continue
+			} else {
+				d.areaQueue.Push(&types.ExploreResponse{Area: tmp, Amount: amount})
+				return
+			}
+		}
+	}
+}
+
+func (d *Digger) divideArea(a *types.Area) *types.Area {
+	b := *a
+	if a.SizeX >= a.SizeY {
+		a.SizeX = a.SizeX / 2
+		b.PosX += a.SizeX
+		b.SizeX -= a.SizeX
+	} else {
+		a.SizeY = a.SizeY / 2
+		b.PosY += a.SizeY
+		b.SizeY -= a.SizeY
+	}
+	return &b
 }

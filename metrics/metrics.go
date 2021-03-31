@@ -35,11 +35,15 @@ func (s *Svc) Start() {
 			s.m.Unlock()
 			fmt.Println("=======================")
 			for name, v := range cp {
+				var max int64 = 0
 				if len(v) == 0 {
 					return
 				}
 				var sum int64
 				for _, t := range v {
+					if t > max {
+						max = t
+					}
 					sum += t
 				}
 				d := stats.LoadRawData(v)
@@ -48,7 +52,7 @@ func (s *Svc) Start() {
 				p90, _ := d.Percentile(90)
 				p75, _ := d.Percentile(75)
 				p95, _ := d.Percentile(99.5)
-				str := fmt.Sprintf("%s: cnt:%v, avg:%v, med:%v, 75p:%v, 90p:%v, 99.5p:%v", name, len(v), avg, med, p75, p90, p95)
+				str := fmt.Sprintf("%s: cnt:%v, avg:%v, med:%v, 75p:%v, 90p:%v, 99.5p:%v, max:%v", name, len(v), avg, med, p75, p90, p95, max)
 				fmt.Println(str)
 				runtime.Gosched()
 			}

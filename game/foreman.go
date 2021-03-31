@@ -1,4 +1,4 @@
-package foreman
+package game
 
 import (
 	"sync"

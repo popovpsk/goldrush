@@ -1,10 +1,18 @@
 package api
 
 import (
-	"github.com/valyala/fasthttp"
 	"sync/atomic"
 
+	"github.com/valyala/fasthttp"
+
 	"time"
+)
+
+const (
+	slaves           = 10
+	rpc              = 1500
+	parallelRequests = 3
+	delay            = 1000*1000/rpc*time.Microsecond - 10*time.Microsecond
 )
 
 type request struct {
@@ -48,13 +56,8 @@ func NewGateWay() *Gateway {
 	return g
 }
 
-const slaves = 10
-const rpc = 1500
-const parallelRequests = 3
-
-const delay = 1000*1000/rpc*time.Microsecond - 10*time.Microsecond
-
 func (g *Gateway) Do(req *fasthttp.Request, res *fasthttp.Response, t byte) {
+
 	r := <-g.pool
 	r.req = req
 	r.res = res
@@ -86,7 +89,7 @@ func (g *Gateway) waitDelay() {
 func (g *Gateway) slaveWorker() {
 	for {
 		r := <-g.slaveCh
-		fasthttp.Do(r.req, r.res)
+		g.cl.Do(r.req, r.res)
 		atomic.AddInt32(&g.parallel, -1)
 		select {
 		case g.wakeUp <- struct{}{}:

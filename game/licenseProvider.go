@@ -1,46 +1,61 @@
 package game
 
 import (
-	"goldrush/datastruct/foreman"
+	"goldrush/api"
+	"goldrush/datastruct/bank"
 	"goldrush/types"
 	"sync/atomic"
-	"time"
 )
 
-func (d *Digger) getLicense() *types.License {
-	return <-d.licenses
+const licenseCost = 21
+
+type LicenseProvider struct {
+	bank           *bank.Bank
+	licenses       chan *types.License
+	activeLicenses int32
+	licWakeCh      chan struct{}
+	apiClient      *api.Client
 }
 
-func (d *Digger) returnLicense(license *types.License) {
+func NewLicenseProvider(bank *bank.Bank, client *api.Client) *LicenseProvider {
+	return &LicenseProvider{
+		apiClient:      client,
+		bank:           bank,
+		activeLicenses: 0,
+		licenses:       make(chan *types.License, 10),
+		licWakeCh:      make(chan struct{}),
+	}
+}
+
+func (p *LicenseProvider) GetLicense() *types.License {
+	return <-p.licenses
+}
+
+func (p *LicenseProvider) ReturnLicense(license *types.License) {
 	if license.DigUsed >= license.DigAllowed {
-		atomic.AddInt32(&d.activeLicenses, -1)
+		atomic.AddInt32(&p.activeLicenses, -1)
 		select {
-		case d.licWakeCh <- struct{}{}:
+		case p.licWakeCh <- struct{}{}:
 		default:
 		}
 	} else {
-		d.licenses <- license
+		p.licenses <- license
 	}
 }
 
-func (d *Digger) licensesWork(state *int) {
-	if atomic.LoadInt32(&d.activeLicenses) >= 10 {
-		<-d.licWakeCh
+func (p *LicenseProvider) LicensesWork(state *int) {
+	if atomic.LoadInt32(&p.activeLicenses) >= 10 {
+		<-p.licWakeCh
 	}
-	if *state == foreman.Stopped {
+	if *state == Stopped {
 		return
 	}
 	license := &types.License{}
-	t := time.Now()
-	var p int32 = 21
-	if coins, ok := d.bank.Get(p); ok {
-		d.apiClient.PostLicenses(coins, license)
-		d.metrics.AddInt("allowed", int64(license.DigAllowed))
+	if coins, ok := p.bank.Get(licenseCost); ok {
+		p.apiClient.PostLicenses(coins, license)
 	} else {
-		d.metrics.AddInt("free", 1)
-		d.apiClient.PostLicenses(nil, license)
+		p.apiClient.PostLicenses(nil, license)
 	}
-	d.metrics.Add("license", time.Since(t))
-	atomic.AddInt32(&d.activeLicenses, 1)
-	d.licenses <- license
+	atomic.AddInt32(&p.activeLicenses, 1)
+	p.licenses <- license
 }

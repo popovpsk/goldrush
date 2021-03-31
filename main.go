@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"goldrush/api"
+	"goldrush/datastruct/bank"
 	"goldrush/datastruct/pointqueue"
 	"goldrush/game"
 	"goldrush/metrics"
@@ -20,9 +21,11 @@ func main() {
 
 	m := metrics.NewMetricsSvc()
 
+	b := bank.NewBank()
 	cl := api.NewClient(url, api.NewGateWay())
 
-	digger := game.NewDigger(cl, m)
+	licP := game.NewLicenseProvider(b, cl)
+	digger := game.NewDigger(licP, cl, m, b)
 	go digger.Start()
 	go func() {
 		<-time.After(utils.GetEndDelay() - time.Second)
