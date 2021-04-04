@@ -1,104 +1,114 @@
 package api
 
 import (
+	"goldrush/metrics"
+	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/valyala/fasthttp"
-
-	"time"
 )
 
 const (
-	slaves           = 10
-	rpc              = 1500
+	rps              = 2000
 	parallelRequests = 3
-	delay            = 1000*1000/rpc*time.Microsecond - 10*time.Microsecond
+	delay            = 1000 * 1000 / rps * time.Microsecond
 )
 
-type request struct {
-	req  *fasthttp.Request
-	res  *fasthttp.Response
-	done chan struct{}
-}
-
 type Gateway struct {
-	requests chan *request
-	slaveCh  chan *request
-	pool     chan *request
-	cl       *fasthttp.Client
-	t        time.Time
+	m      *metrics.Svc
+	client *fasthttp.Client
+	sema   chan struct{}
 
-	next     *request
-	heavyCnt int32
-	parallel int32
-	wakeUp   chan struct{}
+	l         sync.Mutex
+	timeStamp time.Time
 }
 
-func NewGateWay() *Gateway {
-	g := &Gateway{
-		requests: make(chan *request, 100),
-		pool:     make(chan *request, 100),
-		slaveCh:  make(chan *request, slaves),
-		cl:       &fasthttp.Client{},
-		t:        time.Now(),
-		wakeUp:   make(chan struct{}),
-	}
-	for i := 0; i < 100; i++ {
-		g.pool <- &request{
-			done: make(chan struct{}),
+func NewGateway(m *metrics.Svc) *Gateway {
+	go func() {
+		for {
+			atomic.StoreInt64(&rpscntr, 0)
+			time.Sleep(time.Second)
+			r := atomic.LoadInt64(&rpscntr)
+			m.AddInt("rps", r)
 		}
-	}
+	}()
 
-	go g.startMasterWorker()
-	for i := 0; i < slaves; i++ {
-		go g.slaveWorker()
+	return &Gateway{
+		m:      m,
+		sema:   make(chan struct{}, parallelRequests),
+		client: &fasthttp.Client{},
 	}
-	return g
 }
 
-func (g *Gateway) Do(req *fasthttp.Request, res *fasthttp.Response, t byte) {
-
-	r := <-g.pool
-	r.req = req
-	r.res = res
-	g.requests <- r
-	<-r.done
+func (g *Gateway) Do(req *fasthttp.Request, res *fasthttp.Response, b int32) error {
+	var err error
+	g.sema <- struct{}{}
+	g.waitNext()
+	t := time.Now()
+	err = g.client.Do(req, res)
+	el := time.Since(t)
+	<-g.sema
+	g.m.Add(getMethodName(b), el)
+	atomic.AddInt64(&rpscntr, 1)
+	return err
 }
 
-func (g *Gateway) startMasterWorker() {
+var rpscntr int64
+
+func (g *Gateway) doTimeout(req *fasthttp.Request, res *fasthttp.Response, b int32) error {
 	for {
-		r := <-g.requests
-		g.waitDelay()
-		if atomic.LoadInt32(&g.parallel) >= parallelRequests {
-			<-g.wakeUp
+		reqCp := fasthttp.AcquireRequest()
+		resCp := fasthttp.AcquireResponse()
+		req.CopyTo(reqCp)
+		g.sema <- struct{}{}
+		g.waitNext()
+		t := time.Now()
+		err := g.client.DoTimeout(reqCp, resCp, time.Millisecond*3)
+		el := time.Since(t)
+		<-g.sema
+		if err == nil {
+			g.m.Add(getMethodName(1), el)
+			resCp.CopyTo(res)
 		}
-		atomic.AddInt32(&g.parallel, 1)
-		g.slaveCh <- r
+		fasthttp.ReleaseRequest(reqCp)
+		fasthttp.ReleaseResponse(resCp)
+		if err != fasthttp.ErrTimeout {
+			return err
+		}
 	}
 }
-func (g *Gateway) waitDelay() {
-	ct := time.Now()
-	if ct.Sub(g.t) > delay {
-		g.t = ct
+
+func (g *Gateway) waitNext() {
+	//горутина занимает квант в который полетит запрос
+	//если разница между нау и меткой больше нуля можно
+	//исполняться и cдвигать  иначе cдвигаем и ждем
+
+	g.l.Lock()
+	t := time.Now()
+
+	if t.Sub(g.timeStamp) >= 0 {
+		g.timeStamp = time.Now().Add(delay)
+		g.l.Unlock()
 	} else {
-		<-time.After(ct.Sub(g.t))
-		g.t = time.Now()
+		d := g.timeStamp.Sub(t)
+		g.timeStamp = g.timeStamp.Add(delay)
+		g.l.Unlock()
+		time.Sleep(d)
 	}
 }
 
-func (g *Gateway) slaveWorker() {
-	for {
-		r := <-g.slaveCh
-		g.cl.Do(r.req, r.res)
-		atomic.AddInt32(&g.parallel, -1)
-		select {
-		case g.wakeUp <- struct{}{}:
-		default:
-		}
-
-		r.done <- struct{}{}
-		r.req = nil
-		r.res = nil
-		g.pool <- r
+func getMethodName(id int32) string {
+	switch id {
+	case 1:
+		return "explore 1"
+	case 21:
+		return "license"
+	case 22:
+		return "dig"
+	case 23:
+		return "cash"
+	default:
+		return ""
 	}
 }

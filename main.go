@@ -1,19 +1,19 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"goldrush/api"
 	"goldrush/datastruct/bank"
-	"goldrush/datastruct/pointqueue"
 	"goldrush/game"
 	"goldrush/metrics"
 	"goldrush/utils"
 	"os"
+	"runtime"
 	"time"
 )
 
 func main() {
-
 	utils.SetStartTime(time.Now())
 	addr := os.Getenv("ADDRESS")
 	port := 8000
@@ -22,7 +22,7 @@ func main() {
 	m := metrics.NewMetricsSvc()
 
 	b := bank.NewBank()
-	cl := api.NewClient(url, api.NewGateWay())
+	cl := api.NewClient(url, api.NewGateway(m), m)
 
 	licP := game.NewLicenseProvider(b, cl)
 	digger := game.NewDigger(licP, cl, m, b)
@@ -30,7 +30,11 @@ func main() {
 	go func() {
 		<-time.After(utils.GetEndDelay() - time.Second)
 		api.EndLog()
-		pointqueue.EndLog()
+		return
+		mem := runtime.MemStats{}
+		runtime.ReadMemStats(&mem)
+		memJs, _ := json.Marshal(&mem)
+		fmt.Println(string(memJs))
 	}()
 	m.Start()
 	<-time.After(time.Minute * 12)

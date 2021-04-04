@@ -9,12 +9,12 @@ type PriorityQueue []*Item
 
 type Item struct {
 	priority int
-	value    *types.ExploreResponse
+	value    *types.ExploredArea
 	index    int
 }
 
 // update modifies the priority and value of an Item in the queue.
-func (pq *PriorityQueue) update(item *Item, value *types.ExploreResponse, priority int) {
+func (pq *PriorityQueue) update(item *Item, value *types.ExploredArea, priority int) {
 	item.value = value
 	item.priority = priority
 	heap.Fix(pq, item.index)

@@ -9,12 +9,12 @@ import (
 type AreaQueue struct {
 	pq *PriorityQueue
 	l  sync.Mutex
-	ch chan *types.ExploreResponse
+	ch chan *types.ExploredArea
 }
 
 func NewAreaQueue() *AreaQueue {
 	aq := &AreaQueue{
-		ch: make(chan *types.ExploreResponse),
+		ch: make(chan *types.ExploredArea),
 	}
 	pq := make(PriorityQueue, 0, 2000)
 	aq.pq = &pq
@@ -22,7 +22,7 @@ func NewAreaQueue() *AreaQueue {
 	return aq
 }
 
-func (q *AreaQueue) Push(zone *types.ExploreResponse) {
+func (q *AreaQueue) Push(zone *types.ExploredArea) {
 	select {
 	case q.ch <- zone:
 		return
@@ -38,7 +38,7 @@ func (q *AreaQueue) Push(zone *types.ExploreResponse) {
 	heap.Push(q.pq, i)
 }
 
-func (q *AreaQueue) Peek() *types.ExploreResponse {
+func (q *AreaQueue) Peek() *types.ExploredArea {
 	q.l.Lock()
 	if q.pq.Len() == 0 {
 		q.l.Unlock()

@@ -6,7 +6,7 @@ func TestBank(t *testing.T) {
 	b := NewBank()
 
 	st1 := int32(321)
-	st2 := int32(25432)
+	st2 := int32(212)
 
 	sl := make([]uint32, 0, st1)
 	for i := 0; i < int(st1); i++ {

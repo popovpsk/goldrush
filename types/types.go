@@ -11,7 +11,7 @@ type (
 		SizeY int32 `json:"sizeY"`
 	}
 
-	ExploreResponse struct {
+	ExploredArea struct {
 		Area   Area  `json:"area"`
 		Amount int32 `json:"amount"`
 	}
