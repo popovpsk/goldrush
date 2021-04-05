@@ -215,73 +215,7 @@ func (v *Payment) UnmarshalJSON(data []byte) error {
 func (v *Payment) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson6601e8cdDecodeGoldrushTypes2(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushTypes3(in *jlexer.Lexer, out *LicensesResponse) {
-	isTopLevel := in.IsStart()
-	if in.IsNull() {
-		in.Skip()
-		*out = nil
-	} else {
-		in.Delim('[')
-		if *out == nil {
-			if !in.IsDelim(']') {
-				*out = make(LicensesResponse, 0, 5)
-			} else {
-				*out = LicensesResponse{}
-			}
-		} else {
-			*out = (*out)[:0]
-		}
-		for !in.IsDelim(']') {
-			var v10 License
-			(v10).UnmarshalEasyJSON(in)
-			*out = append(*out, v10)
-			in.WantComma()
-		}
-		in.Delim(']')
-	}
-	if isTopLevel {
-		in.Consumed()
-	}
-}
-func easyjson6601e8cdEncodeGoldrushTypes3(out *jwriter.Writer, in LicensesResponse) {
-	if in == nil && (out.Flags&jwriter.NilSliceAsEmpty) == 0 {
-		out.RawString("null")
-	} else {
-		out.RawByte('[')
-		for v11, v12 := range in {
-			if v11 > 0 {
-				out.RawByte(',')
-			}
-			(v12).MarshalEasyJSON(out)
-		}
-		out.RawByte(']')
-	}
-}
-
-// MarshalJSON supports json.Marshaler interface
-func (v LicensesResponse) MarshalJSON() ([]byte, error) {
-	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushTypes3(&w, v)
-	return w.Buffer.BuildBytes(), w.Error
-}
-
-// MarshalEasyJSON supports easyjson.Marshaler interface
-func (v LicensesResponse) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushTypes3(w, v)
-}
-
-// UnmarshalJSON supports json.Unmarshaler interface
-func (v *LicensesResponse) UnmarshalJSON(data []byte) error {
-	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushTypes3(&r, v)
-	return r.Error()
-}
-
-// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
-func (v *LicensesResponse) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushTypes3(l, v)
-}
-func easyjson6601e8cdDecodeGoldrushTypes4(in *jlexer.Lexer, out *License) {
+func easyjson6601e8cdDecodeGoldrushTypes3(in *jlexer.Lexer, out *License) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -316,7 +250,7 @@ func easyjson6601e8cdDecodeGoldrushTypes4(in *jlexer.Lexer, out *License) {
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushTypes4(out *jwriter.Writer, in License) {
+func easyjson6601e8cdEncodeGoldrushTypes3(out *jwriter.Writer, in License) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -341,27 +275,27 @@ func easyjson6601e8cdEncodeGoldrushTypes4(out *jwriter.Writer, in License) {
 // MarshalJSON supports json.Marshaler interface
 func (v License) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushTypes4(&w, v)
+	easyjson6601e8cdEncodeGoldrushTypes3(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v License) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushTypes4(w, v)
+	easyjson6601e8cdEncodeGoldrushTypes3(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *License) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushTypes4(&r, v)
+	easyjson6601e8cdDecodeGoldrushTypes3(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *License) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushTypes4(l, v)
+	easyjson6601e8cdDecodeGoldrushTypes3(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushTypes5(in *jlexer.Lexer, out *ExploredArea) {
+func easyjson6601e8cdDecodeGoldrushTypes4(in *jlexer.Lexer, out *ExploredArea) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -394,7 +328,7 @@ func easyjson6601e8cdDecodeGoldrushTypes5(in *jlexer.Lexer, out *ExploredArea) {
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushTypes5(out *jwriter.Writer, in ExploredArea) {
+func easyjson6601e8cdEncodeGoldrushTypes4(out *jwriter.Writer, in ExploredArea) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -414,27 +348,27 @@ func easyjson6601e8cdEncodeGoldrushTypes5(out *jwriter.Writer, in ExploredArea) 
 // MarshalJSON supports json.Marshaler interface
 func (v ExploredArea) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushTypes5(&w, v)
+	easyjson6601e8cdEncodeGoldrushTypes4(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v ExploredArea) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushTypes5(w, v)
+	easyjson6601e8cdEncodeGoldrushTypes4(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *ExploredArea) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushTypes5(&r, v)
+	easyjson6601e8cdDecodeGoldrushTypes4(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *ExploredArea) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushTypes5(l, v)
+	easyjson6601e8cdDecodeGoldrushTypes4(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushTypes6(in *jlexer.Lexer, out *DigRequest) {
+func easyjson6601e8cdDecodeGoldrushTypes5(in *jlexer.Lexer, out *DigRequest) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -471,7 +405,7 @@ func easyjson6601e8cdDecodeGoldrushTypes6(in *jlexer.Lexer, out *DigRequest) {
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushTypes6(out *jwriter.Writer, in DigRequest) {
+func easyjson6601e8cdEncodeGoldrushTypes5(out *jwriter.Writer, in DigRequest) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -501,27 +435,27 @@ func easyjson6601e8cdEncodeGoldrushTypes6(out *jwriter.Writer, in DigRequest) {
 // MarshalJSON supports json.Marshaler interface
 func (v DigRequest) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushTypes6(&w, v)
+	easyjson6601e8cdEncodeGoldrushTypes5(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v DigRequest) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushTypes6(w, v)
+	easyjson6601e8cdEncodeGoldrushTypes5(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *DigRequest) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushTypes6(&r, v)
+	easyjson6601e8cdDecodeGoldrushTypes5(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *DigRequest) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushTypes6(l, v)
+	easyjson6601e8cdDecodeGoldrushTypes5(l, v)
 }
-func easyjson6601e8cdDecodeGoldrushTypes7(in *jlexer.Lexer, out *Area) {
+func easyjson6601e8cdDecodeGoldrushTypes6(in *jlexer.Lexer, out *Area) {
 	isTopLevel := in.IsStart()
 	if in.IsNull() {
 		if isTopLevel {
@@ -558,7 +492,7 @@ func easyjson6601e8cdDecodeGoldrushTypes7(in *jlexer.Lexer, out *Area) {
 		in.Consumed()
 	}
 }
-func easyjson6601e8cdEncodeGoldrushTypes7(out *jwriter.Writer, in Area) {
+func easyjson6601e8cdEncodeGoldrushTypes6(out *jwriter.Writer, in Area) {
 	out.RawByte('{')
 	first := true
 	_ = first
@@ -588,23 +522,23 @@ func easyjson6601e8cdEncodeGoldrushTypes7(out *jwriter.Writer, in Area) {
 // MarshalJSON supports json.Marshaler interface
 func (v Area) MarshalJSON() ([]byte, error) {
 	w := jwriter.Writer{}
-	easyjson6601e8cdEncodeGoldrushTypes7(&w, v)
+	easyjson6601e8cdEncodeGoldrushTypes6(&w, v)
 	return w.Buffer.BuildBytes(), w.Error
 }
 
 // MarshalEasyJSON supports easyjson.Marshaler interface
 func (v Area) MarshalEasyJSON(w *jwriter.Writer) {
-	easyjson6601e8cdEncodeGoldrushTypes7(w, v)
+	easyjson6601e8cdEncodeGoldrushTypes6(w, v)
 }
 
 // UnmarshalJSON supports json.Unmarshaler interface
 func (v *Area) UnmarshalJSON(data []byte) error {
 	r := jlexer.Lexer{Data: data}
-	easyjson6601e8cdDecodeGoldrushTypes7(&r, v)
+	easyjson6601e8cdDecodeGoldrushTypes6(&r, v)
 	return r.Error()
 }
 
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *Area) UnmarshalEasyJSON(l *jlexer.Lexer) {
-	easyjson6601e8cdDecodeGoldrushTypes7(l, v)
+	easyjson6601e8cdDecodeGoldrushTypes6(l, v)
 }

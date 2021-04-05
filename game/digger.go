@@ -4,7 +4,6 @@ import (
 	"goldrush/api"
 	"goldrush/datastruct/areaqueue"
 	"goldrush/datastruct/bank"
-	"goldrush/metrics"
 	"goldrush/types"
 	"goldrush/utils"
 	"time"
@@ -14,19 +13,17 @@ type Digger struct {
 	apiClient *api.Client
 	bank      *bank.Bank
 	areaQueue *areaqueue.AreaQueue
-	metrics   *metrics.Svc
 	foreman   *Foreman
 	licenses  *LicenseProvider
 
 	areaCh chan *types.Area
 }
 
-func NewDigger(licenseProvider *LicenseProvider, client *api.Client, metrics *metrics.Svc, bank *bank.Bank) *Digger {
+func NewDigger(licenseProvider *LicenseProvider, client *api.Client, bank *bank.Bank) *Digger {
 	d := &Digger{
 		apiClient: client,
 		licenses:  licenseProvider,
 		bank:      bank,
-		metrics:   metrics,
 		areaCh:    make(chan *types.Area, 50),
 		areaQueue: areaqueue.NewAreaQueue(),
 	}
@@ -39,7 +36,7 @@ func NewDigger(licenseProvider *LicenseProvider, client *api.Client, metrics *me
 }
 
 const (
-	sizeX   = 100
+	sizeX   = 125
 	sizeY   = 100
 	workers = 10
 )
@@ -88,7 +85,7 @@ func (d *Digger) firstScanWork(state *int) {
 
 func (d *Digger) scanWork(state *int) {
 	req := d.areaQueue.Peek()
-	if *state == Slow && req.Area.Size() > 50 {
+	if *state == Slow && req.Area.Size() > 400 {
 		return
 	} else {
 		d.search(req)
@@ -160,77 +157,36 @@ func (d *Digger) pushIntoQueue(area *types.ExploredArea) {
 func (d *Digger) exploreSector(explored *types.ExploredArea) {
 	area := explored.Area
 	amount := explored.Amount
+	count := area.Size()
 	ReleaseExploredArea(explored)
+
 	req := AcquireArea()
 	defer ReleaseArea(req)
 	res := AcquireExploredArea()
 	defer ReleaseExploredArea(res)
 
+	check := true
 	req.SizeX = 1
 	req.SizeY = 1
-	if area.SizeX < area.SizeY {
-		for x := area.PosX; x < area.PosX+area.SizeX; {
-			p := float32(amount) / float32(area.Size())
-			//y line
-			for y := area.PosY; y < area.PosY+area.SizeY; y++ {
-				req.PosX = x
-				req.PosY = y
+	for x := area.PosX; x < area.PosX+area.SizeX; x++ {
+		for y := area.PosY; y < area.PosY+area.SizeY; y++ {
+			req.PosX = x
+			req.PosY = y
+			if check {
 				d.apiClient.Explore(req, res)
-				if res.Amount > 0 {
-					d.dig(x, y, res.Amount)
-					amount -= res.Amount
-					if amount <= 0 {
-						return
-					}
+			} else {
+				res.Amount = amount
+			}
+			if res.Amount > 0 {
+				d.dig(x, y, res.Amount)
+				amount -= res.Amount
+				if amount <= 0 {
+					return
 				}
 			}
-
-			x++
-			tmp := types.Area{
-				PosX:  area.PosX + (x - area.PosX),
-				SizeX: area.SizeX - (x - area.PosX),
-				PosY:  area.PosY,
-				SizeY: area.SizeY,
-			}
-			if tmp.SizeX == 0 || p <= float32(tmp.Size())/float32(amount) {
-				continue
-			} else {
-				a := AcquireExploredArea()
-				a.Area = tmp
-				a.Amount = amount
-				d.areaQueue.Push(a)
-				return
-			}
-		}
-	} else {
-		for y := area.PosY; y < area.PosY+area.SizeY; {
-			p := float32(amount) / float32(area.Size())
-			//x line
-			for x := area.PosX; x < area.PosX+area.SizeX; x++ {
-				req.PosX = x
-				req.PosY = y
-				d.apiClient.Explore(req, res)
-				if res.Amount > 0 {
-					d.dig(x, y, res.Amount)
-					amount -= res.Amount
-					if amount <= 0 {
-						return
-					}
-				}
-			}
-
-			y++
-			tmp := types.Area{
-				PosX:  area.PosX,
-				SizeX: area.SizeX,
-				PosY:  area.PosY + (y - area.PosY),
-				SizeY: area.SizeY - (y - area.PosY),
-			}
-			if tmp.SizeY == 0 || p <= float32(amount)/float32(area.Size()) {
-				continue
-			} else {
-				d.areaQueue.Push(&types.ExploredArea{Area: tmp, Amount: amount})
-				return
+			count--
+			if count == 1 && amount > 0 {
+				check = false
 			}
 		}
 	}

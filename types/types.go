@@ -16,8 +16,6 @@ type (
 		Amount int32 `json:"amount"`
 	}
 
-	LicensesResponse []License
-
 	License struct {
 		ID         int32 `json:"id"`
 		DigAllowed int32 `json:"digAllowed"`

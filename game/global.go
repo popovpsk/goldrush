@@ -1,8 +1,9 @@
 package game
 
 import (
-	"goldrush/types"
 	"sync"
+
+	"goldrush/types"
 )
 
 var areaPool sync.Pool

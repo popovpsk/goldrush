@@ -2,9 +2,7 @@ package api
 
 import (
 	"fmt"
-	"goldrush/metrics"
 	"goldrush/types"
-	"sync/atomic"
 
 	"github.com/mailru/easyjson"
 	"github.com/valyala/fasthttp"
@@ -15,7 +13,6 @@ const headerAccept = "*/*"
 const headerAcceptEncoding = "gzip, deflate"
 
 type Client struct {
-	m  *metrics.Svc
 	cl *Gateway
 	js *JsonS
 
@@ -26,20 +23,9 @@ type Client struct {
 	emptyArrayBody []byte
 }
 
-var ErcntExp int32
-var ErcntLic int32
-var ErrcntDig int32
-var ErrcntCash int32
-
-func EndLog() {
-	fmt.Printf("errors: exp:%v, lic:%v, dig:%v, cash:%v\n", ErcntExp, ErcntLic, ErrcntDig, ErrcntCash)
-}
-
-func NewClient(url string, gw *Gateway, m *metrics.Svc) *Client {
-
+func NewClient(url string, gw *Gateway) *Client {
 	return &Client{
 		cl:             gw,
-		m:              m,
 		js:             NewJsonS(),
 		exploreURI:     []byte(url + "/explore"),
 		licensesURI:    []byte(url + "/licenses"),
@@ -58,22 +44,13 @@ func (c *Client) Explore(area *types.Area, response *types.ExploredArea) {
 	body := c.js.GetExploreRequest(area)
 	req.SetBodyRaw(*body)
 	for {
-		var err error
-
-		//if area.Size() == 1 {
-		//	err = c.cl.doTimeout(req, res, 1)
-		//} else {
-		//
-		//}
-		err = c.cl.Do(req, res, 0)
+		err := c.cl.Do(req, res)
 		if err == nil && res.StatusCode() == 200 {
-			break
+			err = easyjson.Unmarshal(res.Body(), response)
+			if err == nil {
+				break
+			}
 		}
-		atomic.AddInt32(&ErcntExp, 1)
-	}
-
-	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
-		fmt.Println(err)
 	}
 	c.js.ReleaseExp(body)
 	fasthttp.ReleaseRequest(req)
@@ -90,16 +67,14 @@ func (c *Client) PostLicenses(wallet types.PostLicenseRequest, response *types.L
 	} else {
 		req.SetBodyRaw(c.emptyArrayBody)
 	}
-
 	for {
-		err := c.cl.Do(req, res, 21)
+		err := c.cl.Do(req, res)
 		if err == nil && res.StatusCode() == 200 {
-			break
+			err = easyjson.Unmarshal(res.Body(), response)
+			if err == nil {
+				break
+			}
 		}
-		atomic.AddInt32(&ErcntLic, 1)
-	}
-	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
-		fmt.Println(err)
 	}
 	fasthttp.ReleaseRequest(req)
 	fasthttp.ReleaseResponse(res)
@@ -121,18 +96,16 @@ func (c *Client) Dig(request *types.DigRequest, response *types.Treasures) bool 
 	}()
 
 	for {
-		err := c.cl.Do(req, res, 22)
-
+		err := c.cl.Do(req, res)
 		if res.StatusCode() == 404 {
 			return false
 		}
 		if err == nil && res.StatusCode() == 200 {
-			break
+			err = easyjson.Unmarshal(res.Body(), response)
+			if err == nil {
+				break
+			}
 		}
-		atomic.AddInt32(&ErrcntDig, 1)
-	}
-	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
-		fmt.Println(err)
 	}
 	return true
 }
@@ -145,14 +118,13 @@ func (c *Client) Cash(request string, response *types.Payment) {
 
 	req.SetBodyRaw([]byte(fmt.Sprintf("\"%s\"", request)))
 	for {
-		err := c.cl.Do(req, res, 23)
+		err := c.cl.Do(req, res)
 		if err == nil && res.StatusCode() == 200 {
-			break
+			err = easyjson.Unmarshal(res.Body(), response)
+			if err == nil {
+				break
+			}
 		}
-		atomic.AddInt32(&ErrcntCash, 1)
-	}
-	if err := easyjson.Unmarshal(res.Body(), response); err != nil {
-		fmt.Println(err.Error())
 	}
 	fasthttp.ReleaseRequest(req)
 	fasthttp.ReleaseResponse(res)
